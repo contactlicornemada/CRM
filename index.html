@@ -188,18 +188,100 @@
 
   ::-webkit-scrollbar{width:10px;height:10px;}
   ::-webkit-scrollbar-thumb{background:var(--line);border-radius:6px;}
+
+  /* ---------- Focus picker ---------- */
+  .focus-picker-list{display:flex;flex-direction:column;gap:2px;max-height:50vh;overflow:auto;}
+  .focus-picker-item{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 10px;
+    border-radius:8px;cursor:pointer;border:1px solid transparent;}
+  .focus-picker-item:hover{background:var(--panel-2);}
+  .focus-picker-item.in-focus{border-color:var(--brand);background:var(--brand-soft);}
+  .focus-picker-item .fp-name{font-weight:600;font-size:13.5px;}
+  .focus-picker-item .fp-sub{font-size:12px;color:var(--muted);}
+  .focus-picker-item .fp-check{font-size:12.5px;font-weight:700;color:var(--brand);white-space:nowrap;}
+
+  /* ---------- Sidebar drawer & hamburger (mobile app) ---------- */
+  #hamburgerBtn{display:none;}
+  #sidebarBackdrop{display:none;}
+  .sidebar-close{display:none;}
+
+  /* ==================================================================
+     RESPONSIVE — mobile app experience
+     ================================================================== */
+  @media(max-width:860px){
+    #sidebar{position:fixed;top:0;left:0;height:100vh;z-index:60;width:250px;
+      transform:translateX(-100%);transition:transform .22s ease;}
+    #sidebar.open{transform:translateX(0);}
+    #sidebarBackdrop{display:block;position:fixed;inset:0;background:rgba(10,12,10,.45);z-index:55;
+      opacity:0;pointer-events:none;transition:opacity .2s ease;}
+    #sidebarBackdrop.show{opacity:1;pointer-events:auto;}
+    .sidebar-close{display:flex;margin-left:auto;}
+    #hamburgerBtn{display:flex;}
+    #main{width:100%;}
+    #topbar h1{display:none;}
+    #topbar{padding:10px 14px;gap:8px;}
+    #view{padding:14px 12px 56px;}
+    .add-label{display:none;}
+    #addBtn{padding:9px 12px;}
+    .grid.cols-4{grid-template-columns:repeat(2,1fr);}
+  }
+  @media(max-width:640px){
+    #topbar{flex-wrap:wrap;}
+    .searchbox{order:3;flex-basis:100%;max-width:100%;}
+    .modal{max-width:100%;width:100%;height:100%;max-height:100%;border-radius:0;
+      display:flex;flex-direction:column;margin:0;}
+    .modal.narrow{max-width:100%;}
+    .overlay{padding:0;align-items:stretch;}
+    .modal-body{flex:1;max-height:none;}
+    .grid.cols-4,.grid.cols-3,.grid.cols-2{grid-template-columns:1fr;}
+    .kpi-value{font-size:24px;}
+    .section-title{flex-direction:column;align-items:flex-start;gap:4px;}
+    .card{padding:14px;}
+    #view{padding:12px 10px 56px;}
+    .toolbar{gap:8px;}
+    .field-row{grid-template-columns:1fr;}
+    .detail-grid{grid-template-columns:1fr;}
+  }
+  @media(max-width:420px){
+    .kpi-value{font-size:21px;}
+    thead th, tbody td{padding:9px 10px;font-size:12.5px;}
+  }
+
+  /* ---------- Login gate ---------- */
+  #loginScreen{position:fixed;inset:0;z-index:200;background:var(--bg);display:flex;align-items:center;justify-content:center;padding:20px;}
+  .login-card{background:var(--panel);border:1px solid var(--line);border-radius:16px;box-shadow:var(--shadow);padding:32px 28px;width:100%;max-width:360px;}
+  .login-card .brand{justify-content:center;margin-bottom:22px;font-size:19px;}
+  .login-card h2{margin:0 0 6px;font-size:17px;text-align:center;}
+  .login-card p.sub-login{text-align:center;color:var(--muted);font-size:13px;margin:0 0 22px;}
+  .login-error{color:var(--danger);font-size:12.5px;margin:-6px 0 14px;min-height:16px;}
+  .login-card .btn{width:100%;justify-content:center;}
+  #app.locked{display:none;}
 </style>
 </head>
 <body>
-<div id="app">
-  <aside id="sidebar">
+<div id="loginScreen">
+  <div class="login-card">
     <div class="brand"><div class="brand-mark"></div>CRM Licorne</div>
+    <h2>Accès sécurisé</h2>
+    <p class="sub-login">Entrez le mot de passe pour accéder au CRM.</p>
+    <form id="loginForm">
+      <div class="field"><label>Mot de passe</label><input type="password" id="loginPassword" autocomplete="current-password" placeholder="••••••••"></div>
+      <div class="login-error" id="loginError"></div>
+      <button class="btn primary" type="submit">Se connecter</button>
+    </form>
+  </div>
+</div>
+<div id="app" class="locked">
+  <div id="sidebarBackdrop"></div>
+  <aside id="sidebar">
+    <div class="brand"><div class="brand-mark"></div>CRM Licorne<button class="iconbtn sidebar-close" id="sidebarCloseBtn" title="Fermer">✕</button></div>
     <nav id="mainNav">
       <div class="navlabel">Pilotage</div>
       <button class="navitem" data-view="dashboard"><span class="ic">◆</span>Tableau de bord</button>
       <button class="navitem" data-view="focus"><span class="ic">◈</span>Focus du jour</button>
+      <button class="navitem" data-view="urgence"><span class="ic">⏰</span>Matrice d'urgence</button>
       <div class="navlabel">Prospects</div>
       <button class="navitem" data-view="list"><span class="ic">≡</span>Tous les prospects</button>
+      <button class="navitem" data-view="noncontacte"><span class="ic">⏱</span>Non contactés</button>
       <button class="navitem" data-view="friction"><span class="ic">⟳</span>Tri de friction</button>
       <button class="navitem" data-view="potentiel"><span class="ic">✦</span>Potentiel FMFP</button>
       <div class="navlabel">Système</div>
@@ -208,16 +290,18 @@
     <div class="sidebar-foot">
       <div><span id="connDot"></span><span id="connLabel">Connexion…</span></div>
       <div id="prospectCount" style="margin-top:4px;">—</div>
+      <button class="btn sm ghost" id="logoutBtn" style="margin-top:10px;padding-left:0;">↩ Se déconnecter</button>
     </div>
   </aside>
 
   <div id="main">
     <div id="topbar">
+      <button class="iconbtn" id="hamburgerBtn" title="Menu">☰</button>
       <h1 id="viewTitle">Tableau de bord</h1>
       <div class="searchbox"><span>🔎</span><input id="searchInput" placeholder="Rechercher un prospect, un contact, un secteur…"></div>
       <div class="topbar-actions">
         <button class="iconbtn" id="themeBtn" title="Thème">🌙</button>
-        <button class="btn primary" id="addBtn">+ Nouveau prospect</button>
+        <button class="btn primary" id="addBtn"><span class="add-icon">+</span><span class="add-label"> Nouveau prospect</span></button>
       </div>
     </div>
     <div id="view"></div>
@@ -312,6 +396,31 @@
   </div>
 </div>
 
+<!-- ============ Modal: Ajouter au Focus du jour ============ -->
+<div class="overlay hidden" id="focusPickerOverlay">
+  <div class="modal">
+    <div class="modal-head"><h3>Ajouter au Focus du jour</h3><button class="iconbtn" data-close>✕</button></div>
+    <div class="modal-body">
+      <div class="searchbox" style="max-width:100%;margin-bottom:14px;"><span>🔎</span><input id="focusPickerSearch" placeholder="Rechercher un prospect, un contact, un secteur…"></div>
+      <div id="focusPickerList" class="focus-picker-list"></div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn primary" data-close>Terminé</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============ Modal: Rappel RDV J-1 ============ -->
+<div class="overlay hidden" id="rdvReminderOverlay">
+  <div class="modal narrow">
+    <div class="modal-head"><h3>📅 RDV demain</h3><button class="iconbtn" data-close>✕</button></div>
+    <div class="modal-body" id="rdvReminderBody"></div>
+    <div class="modal-foot">
+      <button class="btn primary" data-close>Compris</button>
+    </div>
+  </div>
+</div>
+
 <script>
 /* ==================================================================
    CRM Licorne — application script
@@ -401,9 +510,14 @@ function visibleCols(){ return COLUMNS.filter(c => c.always || state.visibleColu
 
 /* ---------------- State ---------------- */
 const DEFAULT_VISIBLE_COLS = ['nom','contact_resp','temp','propriete','rdv','date_relance','dernier_contact','nbr_relance_nrp','actions'];
+function loadFocusIds(){
+  try{ return new Set(JSON.parse(localStorage.getItem('crmlicorne_focus')||'[]')); }catch(e){ return new Set(); }
+}
+function saveFocusIds(){ localStorage.setItem('crmlicorne_focus', JSON.stringify([...state.focusIds])); }
+
 const state = {
   prospects: [], view: 'dashboard', search: '', editingId: null, prodPeriod: 'jour', dashPeriod: 'jour', charts: {},
-  visibleColumns: new Set(DEFAULT_VISIBLE_COLS), colMenuOpen: false, focusDays: 7,
+  visibleColumns: new Set(DEFAULT_VISIBLE_COLS), colMenuOpen: false, focusDays: 7, focusIds: loadFocusIds(),
 };
 
 /* ---------------- Utils ---------------- */
@@ -539,6 +653,42 @@ async function applyNrp(p, note){
   await refreshData();
 }
 
+/* ---------------- RDV reminders (pop-up J-1) ---------------- */
+function loadRdvReminders(){
+  let map = {};
+  try{ map = JSON.parse(localStorage.getItem('crmlicorne_rdvs')||'{}'); }catch(e){ map = {}; }
+  const today = todayISO();
+  Object.keys(map).forEach(id=>{ if(map[id].date && map[id].date < today) delete map[id]; });
+  return map;
+}
+function registerRdvReminder(p, date){
+  if(!date) return;
+  const map = loadRdvReminders();
+  map[p.id] = { date, nom: p.nom };
+  localStorage.setItem('crmlicorne_rdvs', JSON.stringify(map));
+}
+function showRdvReminderPopup(list){
+  $('#rdvReminderBody').innerHTML = `
+    <p style="margin-top:0;color:var(--muted);font-size:13px;">Vous avez ${list.length} rendez-vous prévu${list.length>1?'s':''} demain :</p>
+    <div style="display:flex;flex-direction:column;gap:8px;">
+      ${list.map(info=>`<div class="card" style="padding:12px 14px;"><b>${escapeHtml(info.nom)}</b><div class="sub">${frDate(info.date)}</div></div>`).join('')}
+    </div>
+  `;
+  $('#rdvReminderOverlay').classList.remove('hidden');
+}
+function checkRdvReminders(){
+  const map = loadRdvReminders();
+  const tomorrow = addDaysISO(todayISO(), 1);
+  const seenKey = 'crmlicorne_rdv_seen_' + todayISO();
+  let seen = [];
+  try{ seen = JSON.parse(localStorage.getItem(seenKey)||'[]'); }catch(e){ seen = []; }
+  const due = Object.entries(map).filter(([id,info]) => info.date === tomorrow && !seen.includes(id));
+  if(due.length){
+    showRdvReminderPopup(due.map(([id,info])=>info));
+    localStorage.setItem(seenKey, JSON.stringify([...seen, ...due.map(([id])=>id)]));
+  }
+}
+
 async function applyRdv(p, {date, status, note}){
   const today = todayISO();
   const patch = {
@@ -550,6 +700,7 @@ async function applyRdv(p, {date, status, note}){
   patch.prochain_action = appendNote(p.prochain_action, line);
   const { error } = await sb.from(TABLE).update(patch).eq('id', p.id);
   if(error){ toast('Erreur : '+error.message,'error'); return; }
+  registerRdvReminder(p, date || today);
   toast('RDV enregistré — prospect réchauffé 🔥');
   await refreshData();
 }
@@ -566,8 +717,8 @@ function baseFiltered(){ return state.prospects.filter(p => matchesSearch(p, sta
    Rendering
    ================================================================== */
 const VIEW_TITLES = {
-  dashboard:'Tableau de bord', focus:'Focus du jour', list:'Tous les prospects',
-  friction:'Tri de friction', potentiel:'Potentiel FMFP', settings:'Paramètres'
+  dashboard:'Tableau de bord', focus:'Focus du jour', urgence:"Matrice d'urgence", list:'Tous les prospects',
+  noncontacte:'Non contactés', friction:'Tri de friction', potentiel:'Potentiel FMFP', settings:'Paramètres'
 };
 
 function render(){
@@ -576,7 +727,9 @@ function render(){
   const view = $('#view');
   if(state.view === 'dashboard') view.innerHTML = dashboardHTML();
   else if(state.view === 'focus') view.innerHTML = focusHTML();
+  else if(state.view === 'urgence') view.innerHTML = urgenceHTML();
   else if(state.view === 'list') view.innerHTML = listHTML(baseFiltered(), 'Tous les prospects', 'Vue complète, triée par nom.');
+  else if(state.view === 'noncontacte') view.innerHTML = noncontacteHTML();
   else if(state.view === 'friction') view.innerHTML = frictionHTML();
   else if(state.view === 'potentiel') view.innerHTML = potentielHTML();
   else if(state.view === 'settings') view.innerHTML = settingsHTML();
@@ -624,27 +777,99 @@ function listHTML(rows, title, hint){
   `;
 }
 
+function focusRowHTML(p){
+  return `<tr data-id="${p.id}">
+    <td class="sticky-col"><div class="name-cell">${escapeHtml(p.nom)}</div><div class="sub">${escapeHtml(p.secteur||'—')}</div></td>
+    <td>${escapeHtml(p.contact_resp||'—')}</td>
+    <td>${tempBadge(p)}</td>
+    <td>${escapeHtml(p.propriete||'—')}</td>
+    <td>${p.dernier_contact? frDate(p.dernier_contact):'—'}</td>
+    <td>${(() => { const v=(p.prochain_action||'').trim(); if(!v) return '—'; return escapeHtml(v.length>50? v.slice(0,50)+'…' : v); })()}</td>
+    <td>
+      <div class="row-actions">
+        <button class="btn sm" data-action="unfocus" title="Retirer du focus">✕ Focus</button>
+        <button class="btn sm" data-action="nrp" title="Appel NRP">📵</button>
+        <button class="btn sm" data-action="rdv" title="RDV pris">📅</button>
+        <button class="btn sm" data-action="edit" title="Modifier">✎</button>
+      </div>
+    </td>
+  </tr>`;
+}
+function focusTableShell(rows, emptyMsg){
+  if(!rows.length) return `<div class="table-wrap"><div class="empty"><div class="big">☀️</div>${emptyMsg}</div></div>`;
+  return `<div class="table-wrap"><table style="min-width:760px">
+    <thead><tr><th class="sticky-col">Prospect</th><th>Contact</th><th>Thermomètre</th><th>Statut</th><th>Dernier contact</th><th>Prochaine action</th><th></th></tr></thead>
+    <tbody>${rows.map(focusRowHTML).join('')}</tbody>
+  </table></div>`;
+}
+
 function focusHTML(){
+  const rows = baseFiltered().filter(p => state.focusIds.has(p.id))
+    .sort((a,b)=> (a.nom||'').localeCompare(b.nom||''));
+  return `
+    <div class="section-title">
+      <h2>Focus du jour</h2>
+      <span class="hint">Sélection manuelle · ${rows.length} prospect(s)</span>
+    </div>
+    <div class="toolbar">
+      <button class="btn primary sm" id="addFocusBtn">+ Ajouter un prospect au focus</button>
+    </div>
+    ${focusTableShell(rows, "Aucun prospect en focus pour l'instant — cliquez sur « + Ajouter un prospect au focus » pour en choisir dans votre liste.")}
+  `;
+}
+
+function renderFocusPicker(term){
+  const list = $('#focusPickerList');
+  const rows = state.prospects.filter(p=>matchesSearch(p, term)).sort((a,b)=>(a.nom||'').localeCompare(b.nom||''));
+  if(!rows.length){ list.innerHTML = `<div class="empty" style="padding:24px;"><div class="big">🔍</div>Aucun résultat.</div>`; return; }
+  list.innerHTML = rows.map(p=>{
+    const inFocus = state.focusIds.has(p.id);
+    return `<div class="focus-picker-item ${inFocus?'in-focus':''}" data-id="${p.id}">
+      <div><div class="fp-name">${escapeHtml(p.nom)}</div><div class="fp-sub">${escapeHtml(p.contact_resp||p.secteur||'—')}</div></div>
+      <div class="fp-check">${inFocus? '✓ Dans le focus' : '+ Ajouter'}</div>
+    </div>`;
+  }).join('');
+  $$('#focusPickerList .focus-picker-item').forEach(item=>{
+    item.onclick = ()=>{
+      const id = Number(item.dataset.id);
+      if(state.focusIds.has(id)) state.focusIds.delete(id); else state.focusIds.add(id);
+      saveFocusIds();
+      renderFocusPicker($('#focusPickerSearch').value);
+      if(state.view==='focus') view_refresh_focus();
+    };
+  });
+}
+function view_refresh_focus(){ $('#view').innerHTML = focusHTML(); wireDynamicHandlers(); }
+function openFocusPicker(){
+  $('#focusPickerSearch').value = '';
+  renderFocusPicker('');
+  $('#focusPickerOverlay').classList.remove('hidden');
+}
+
+function urgenceHTML(){
   const today = todayISO();
   const due = baseFiltered().filter(p => p.date_relance && p.date_relance <= today)
     .sort((a,b)=> a.date_relance.localeCompare(b.date_relance));
   const late = due.filter(p=>p.date_relance < today).length;
-
-  const X = Number(state.focusDays) || 7;
-  const stale = baseFiltered().filter(p => !p.dernier_contact || daysBetween(p.dernier_contact, today) >= X)
-    .sort((a,b)=> (a.dernier_contact||'0000-00-00').localeCompare(b.dernier_contact||'0000-00-00'));
-
   return `
     <div class="grid cols-3" style="margin-bottom:6px;">
       <div class="card"><div class="kpi-label">À relancer aujourd'hui ou en retard</div><div class="kpi-value num">${due.length}</div></div>
       <div class="card"><div class="kpi-label">Dont en retard</div><div class="kpi-value num" style="color:var(--danger)">${late}</div></div>
       <div class="card"><div class="kpi-label">Relances planifiées (total base)</div><div class="kpi-value num">${state.prospects.filter(p=>p.date_relance).length}</div></div>
     </div>
-    <div class="section-title"><h2>Matrice d'urgence — à traiter en priorité</h2><span class="hint">Trié par date de relance la plus ancienne</span></div>
-    ${tableShell(due, "Aucune relance due aujourd'hui — la matrice d'urgence est à jour ✅", false)}
+    <div class="section-title"><h2>Matrice d'urgence</h2><span class="hint">Calcul automatique · trié par date de relance la plus ancienne</span></div>
+    ${tableShell(due, "Aucune relance due aujourd'hui — la matrice d'urgence est à jour ✅")}
+  `;
+}
 
+function noncontacteHTML(){
+  const today = todayISO();
+  const X = Number(state.focusDays) || 7;
+  const stale = baseFiltered().filter(p => !p.dernier_contact || daysBetween(p.dernier_contact, today) >= X)
+    .sort((a,b)=> (a.dernier_contact||'0000-00-00').localeCompare(b.dernier_contact||'0000-00-00'));
+  return `
     <div class="section-title">
-      <h2>Prospects non contactés depuis X jours</h2>
+      <h2>Non contactés depuis X jours</h2>
       <span class="hint">${stale.length} résultat(s)</span>
     </div>
     <div class="toolbar">
@@ -745,7 +970,7 @@ function dashboardHTML(){
     <div class="card"><div class="kpi-label">Prospects au total</div><div class="kpi-value num">${total}</div><div class="kpi-sub">Base CRM Licorne</div></div>
     <div class="card"><div class="kpi-label">Taux de joignabilité</div><div class="kpi-value num">${joignabilite}%</div><div class="kpi-sub">Contacts aboutis / tentatives</div></div>
     <div class="card"><div class="kpi-label">Taux de conversion</div><div class="kpi-value num">${conversion}%</div><div class="kpi-sub">Fiches qualifiées / total</div></div>
-    <div class="card"><div class="kpi-label">Relances dues aujourd'hui</div><div class="kpi-value num">${state.prospects.filter(p=>p.date_relance && p.date_relance<=todayISO()).length}</div><div class="kpi-sub">Voir Focus du jour</div></div>
+    <div class="card"><div class="kpi-label">Relances dues aujourd'hui</div><div class="kpi-value num">${state.prospects.filter(p=>p.date_relance && p.date_relance<=todayISO()).length}</div><div class="kpi-sub">Voir Matrice d'urgence</div></div>
   </div>
 
   <div class="section-title">
@@ -1003,6 +1228,7 @@ function wireDynamicHandlers(){
       else if(action==='delete') openDeleteModal(p);
       else if(action==='nrp') openNrpModal(p);
       else if(action==='rdv') openRdvModal(p);
+      else if(action==='unfocus'){ state.focusIds.delete(p.id); saveFocusIds(); render(); }
     };
   });
   $$('#view tbody tr[data-id]').forEach(tr=>{
@@ -1040,6 +1266,8 @@ function wireDynamicHandlers(){
   }
   const focusInput = $('#focusDaysInput');
   if(focusInput) focusInput.onchange = (e)=>{ const v = Math.max(1, Number(e.target.value)||1); state.focusDays = v; render(); };
+  const addFocusBtn = $('#addFocusBtn');
+  if(addFocusBtn) addFocusBtn.onclick = openFocusPicker;
 }
 
 let deleteTarget = null;
@@ -1053,7 +1281,7 @@ function openRdvModal(p){ rdvTarget = p; $('#rdvName').textContent = p.nom; $('#
 
 /* ---------------- Static wiring ---------------- */
 function initStaticHandlers(){
-  $$('.navitem').forEach(btn => btn.onclick = ()=>{ state.view = btn.dataset.view; render(); });
+  $$('.navitem').forEach(btn => btn.onclick = ()=>{ state.view = btn.dataset.view; render(); closeSidebar(); });
   $('#addBtn').onclick = ()=> openProspectModal(null);
   $$('[data-close]').forEach(btn => btn.onclick = ()=> closeOverlay(btn.closest('.overlay')));
   $$('.overlay').forEach(ov => ov.addEventListener('click', e=>{ if(e.target===ov) closeOverlay(ov); }));
@@ -1069,23 +1297,64 @@ function initStaticHandlers(){
   let searchTimer;
   $('#searchInput').addEventListener('input', (e)=>{ clearTimeout(searchTimer); searchTimer=setTimeout(()=>{ state.search = e.target.value; render(); }, 180); });
 
+  let focusSearchTimer;
+  $('#focusPickerSearch').addEventListener('input', (e)=>{ clearTimeout(focusSearchTimer); focusSearchTimer=setTimeout(()=> renderFocusPicker(e.target.value), 150); });
+
   $('#themeBtn').onclick = ()=>{
     const cur = document.documentElement.dataset.theme;
     applyTheme(cur==='dark' ? 'light' : 'dark');
     if(state.view==='dashboard') setTimeout(buildDashboardCharts, 0);
   };
+
+  $('#hamburgerBtn').onclick = openSidebar;
+  $('#sidebarCloseBtn').onclick = closeSidebar;
+  $('#sidebarBackdrop').onclick = closeSidebar;
+  $('#logoutBtn').onclick = ()=>{ sessionStorage.removeItem('crmlicorne_auth'); location.reload(); };
 }
+function openSidebar(){ $('#sidebar').classList.add('open'); $('#sidebarBackdrop').classList.add('show'); }
+function closeSidebar(){ $('#sidebar').classList.remove('open'); $('#sidebarBackdrop').classList.remove('show'); }
 function applyTheme(t){
   document.documentElement.dataset.theme = t;
   $('#themeBtn').textContent = t==='dark' ? '☀️' : '🌙';
   localStorage.setItem('crmlicorne_theme', t);
 }
 
+/* ---------------- Auth gate ---------------- */
+const APP_PASSWORD = 'Angela#110';
+function showApp(){
+  $('#loginScreen').style.display = 'none';
+  $('#app').classList.remove('locked');
+}
+function tryLogin(pwd){
+  if(pwd === APP_PASSWORD){
+    sessionStorage.setItem('crmlicorne_auth', 'ok');
+    $('#loginError').textContent = '';
+    showApp();
+    startApp();
+    return true;
+  }
+  $('#loginError').textContent = 'Mot de passe incorrect.';
+  $('#loginPassword').value = '';
+  $('#loginPassword').focus();
+  return false;
+}
+
 /* ---------------- Init ---------------- */
-(async function init(){
+async function startApp(){
   applyTheme(localStorage.getItem('crmlicorne_theme') || (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark':'light'));
   initStaticHandlers();
   await refreshData();
+  setTimeout(checkRdvReminders, 500);
+}
+
+(function initAuth(){
+  $('#loginForm').onsubmit = (e)=>{ e.preventDefault(); tryLogin($('#loginPassword').value); };
+  if(sessionStorage.getItem('crmlicorne_auth') === 'ok'){
+    showApp();
+    startApp();
+  } else {
+    $('#loginPassword').focus();
+  }
 })();
 </script>
 </body>
