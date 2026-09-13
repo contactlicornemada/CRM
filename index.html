@@ -41,7 +41,7 @@
   #sidebar{width:220px;flex:none;background:var(--panel);border-right:1px solid var(--line);
     display:flex;flex-direction:column;padding:20px 14px;gap:22px;position:sticky;top:0;height:100vh;}
   .brand{display:flex;align-items:center;gap:10px;font-weight:700;font-size:17px;padding:0 8px;}
-  .brand-mark{width:30px;height:30px;border-radius:9px;background:linear-gradient(135deg,var(--brulant),var(--chaud) 45%,var(--tiede) 75%,var(--froid));
+  .brand-mark{width:30px;height:30px;border-radius:99px;background:linear-gradient(135deg,var(--brulant),var(--chaud) 45%,var(--tiede) 75%,var(--froid));
     flex:none;box-shadow:inset 0 0 0 2px rgba(255,255,255,.25);}
   nav{display:flex;flex-direction:column;gap:2px;}
   nav .navlabel{font-size:11px;letter-spacing:.02em;color:var(--muted);margin:14px 8px 4px;font-weight:600;}
@@ -143,14 +143,20 @@
   .col-menu-item:hover{background:var(--panel-2);}
   .col-menu-item input{cursor:pointer;}
 
-  /* ---------- Detail view ---------- */
+  /* ---------- Detail view & Comments ---------- */
   .detail-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px 18px;}
   .detail-item{display:flex;flex-direction:column;gap:4px;}
   .detail-label{font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.03em;}
   .detail-value{font-size:14px;line-height:1.5;}
-  .detail-notes{white-space:pre-wrap;line-height:1.6;background:var(--panel-2);border:1px solid var(--line);
-    border-radius:var(--radius-sm);padding:10px 12px;min-height:60px;}
   @media(max-width:560px){.detail-grid{grid-template-columns:1fr;}}
+
+  .comments-section{margin-top:20px;border-top:1px solid var(--line);padding-top:16px;}
+  .comments-list{display:flex;flex-direction:column;gap:10px;margin-bottom:14px;max-height:220px;overflow-y:auto;}
+  .comment-box{background:var(--panel-2);border:1px solid var(--line);border-radius:var(--radius-sm);padding:10px 12px;font-size:13px;}
+  .comment-head{display:flex;justify-content:space-between;color:var(--muted);font-size:11px;font-weight:600;margin-bottom:4px;}
+  .comment-body{white-space:pre-wrap;line-height:1.4;}
+  .add-comment-form{display:flex;gap:8px;align-items:flex-end;}
+  .add-comment-form textarea{flex:1;min-height:50px;border:1px solid var(--line);border-radius:var(--radius-sm);padding:8px 10px;background:var(--panel-2);color:var(--text);outline:0;}
 
   /* ---------- Modal ---------- */
   .overlay{position:fixed;inset:0;background:rgba(10,12,10,.45);display:flex;align-items:flex-start;
@@ -199,14 +205,11 @@
   .focus-picker-item .fp-sub{font-size:12px;color:var(--muted);}
   .focus-picker-item .fp-check{font-size:12.5px;font-weight:700;color:var(--brand);white-space:nowrap;}
 
-  /* ---------- Sidebar drawer & hamburger (mobile app) ---------- */
+  /* ---------- Mobile Drawer ---------- */
   #hamburgerBtn{display:none;}
   #sidebarBackdrop{display:none;}
   .sidebar-close{display:none;}
 
-  /* ==================================================================
-     RESPONSIVE — mobile app experience
-     ================================================================== */
   @media(max-width:860px){
     #sidebar{position:fixed;top:0;left:0;height:100vh;z-index:60;width:250px;
       transform:translateX(-100%);transition:transform .22s ease;}
@@ -430,6 +433,7 @@
 const DEFAULT_SUPABASE_URL = 'https://efyomnxnzjcqosobqxeo.supabase.co';
 const DEFAULT_SUPABASE_KEY = 'sb_publishable_-1SDSkv_CTL29sluc_yKZg_TcmEV2ia';
 const TABLE = 'prospects';
+const COMMENTS_TABLE = 'prospect_comments';
 
 function getConfig(){
   try{
@@ -442,13 +446,15 @@ const CFG = getConfig();
 let sb = null;
 try{ sb = window.supabase.createClient(CFG.url, CFG.key); }catch(e){ console.error(e); }
 
-/* ---------------- Field metadata (19 champs CSV) ---------------- */
+/* ---------------- Field metadata ---------------- */
 const FIELDS = [
   {key:'nom', label:'Nom (entreprise / prospect)', type:'text', group:'Identité', required:true},
   {key:'contact_resp', label:'Contact responsable', type:'text', group:'Identité'},
   {key:'genre', label:'Genre (H/F)', type:'text', group:'Identité', list:true},
   {key:'email', label:'Adresse e-mail', type:'text', group:'Identité'},
   {key:'secteur', label:"Secteur d'activité", type:'text', group:'Identité', list:true},
+  {key:'potentiel_financier', label:'Potentiel Financier', type:'number', group:'Évaluation'},
+  {key:'chances_closing', label:'Chances de closing (%)', type:'number', group:'Évaluation'},
   {key:'fmfp', label:'Affiliation FMFP', type:'select', group:'Qualification', options:['','Yes','No']},
   {key:'interet', label:'Intérêt / besoin de formation', type:'text', group:'Qualification', list:true},
   {key:'propriete', label:'Statut (Propriété)', type:'text', group:'Qualification', list:true},
@@ -465,39 +471,32 @@ const FIELDS = [
 ];
 const SECTEURS_POIDS = ['GROUPE','BANQUE&ASSURANCE','Energie','THR','TIC'];
 
-/* ---------------- Table columns (choisir les champs à afficher) ---------------- */
+/* ---------------- Helper calcul valeur pondérée ---------------- */
+function getWeightedScore(p){
+  const pot = Number(p.potentiel_financier) || 0;
+  const chance = Number(p.chances_closing) || 0;
+  return pot * (chance / 100);
+}
+
+/* ---------------- Table columns ---------------- */
 const COLUMNS = [
   {key:'nom', label:'Prospect', always:true, sticky:true,
     render:p=>`<div class="name-cell">${escapeHtml(p.nom)}</div><div class="sub">${escapeHtml(p.secteur||'—')}</div>`},
+  {key:'weighted', label:'Score Pondéré (Val × %)', render:p=>{
+    const score = getWeightedScore(p);
+    return `<b>${score.toLocaleString('fr-FR')}</b> <span class="sub">(${p.chances_closing||0}%)</span>`;
+  }},
+  {key:'potentiel_financier', label:'Potentiel Fin.', render:p=>(Number(p.potentiel_financier)||0).toLocaleString('fr-FR')},
+  {key:'chances_closing', label:'Closing %', render:p=>(p.chances_closing||0) + '%'},
   {key:'contact_resp', label:'Contact', render:p=>escapeHtml(p.contact_resp||'—')},
-  {key:'genre', label:'Genre (H/F)', render:p=>escapeHtml(p.genre||'—')},
-  {key:'email', label:'E-mail', render:p=>escapeHtml(p.email||'—')},
-  {key:'secteur', label:'Secteur', render:p=>escapeHtml(p.secteur||'—')},
   {key:'temp', label:'Thermomètre', render:p=>tempBadge(p)},
-  {key:'fmfp', label:'FMFP', render:p=>escapeHtml(p.fmfp||'—')},
-  {key:'interet', label:'Besoin / intérêt', render:p=>escapeHtml(p.interet||'—')},
   {key:'propriete', label:'Statut', render:p=>escapeHtml(p.propriete||'—')},
   {key:'rdv', label:'RDV', render:p=>escapeHtml(p.rdv||'—')},
-  {key:'premiere_prospection', label:'1ère prospection', render:p=>p.premiere_prospection? frDate(p.premiere_prospection):'—'},
-  {key:'dernier_contact', label:'Dernier contact', render:p=> p.dernier_contact? frDate(p.dernier_contact):'—'},
-  {key:'dernier_mail', label:'Dernier mail', render:p=>p.dernier_mail? frDate(p.dernier_mail):'—'},
   {key:'date_relance', label:'Relance', render:p=>{
     const overdue = p.date_relance && p.date_relance < todayISO();
     return `${p.date_relance? frDate(p.date_relance):'—'} ${overdue?'<span class="badge-soft badge-warn">en retard</span>':''}`;
   }},
-  {key:'mail_relance', label:'Mail de relance', render:p=>escapeHtml(p.mail_relance||'—')},
-  {key:'nbr_relance', label:'Nb relances', render:p=>p.nbr_relance ?? 0},
-  {key:'nbr_relance_nrp', label:'NRP', render:p=>{
-    const stagnant = p.mise_a_jour && daysBetween(p.mise_a_jour, new Date()) > 14;
-    return `${p.nbr_relance_nrp ?? 0}${stagnant?' <span class="badge-soft badge-warn">stagnant</span>':''}`;
-  }},
-  {key:'relance_origine', label:'Origine relance', render:p=>escapeHtml(p.relance_origine||'—')},
-  {key:'prochain_action', label:'Prochaine action', render:p=>{
-    const v = (p.prochain_action||'').trim();
-    if(!v) return '—';
-    const short = v.length>60? v.slice(0,60)+'…' : v;
-    return escapeHtml(short);
-  }},
+  {key:'nbr_relance_nrp', label:'NRP', render:p=>p.nbr_relance_nrp ?? 0},
   {key:'actions', label:'', always:true,
     render:p=>`<div class="row-actions">
       <button class="btn sm" data-action="nrp" title="Appel NRP">📵</button>
@@ -509,7 +508,7 @@ const COLUMNS = [
 function visibleCols(){ return COLUMNS.filter(c => c.always || state.visibleColumns.has(c.key)); }
 
 /* ---------------- State ---------------- */
-const DEFAULT_VISIBLE_COLS = ['nom','contact_resp','temp','propriete','rdv','date_relance','dernier_contact','nbr_relance_nrp','actions'];
+const DEFAULT_VISIBLE_COLS = ['nom','weighted','potentiel_financier','temp','propriete','date_relance','actions'];
 function loadFocusIds(){
   try{ return new Set(JSON.parse(localStorage.getItem('crmlicorne_focus')||'[]')); }catch(e){ return new Set(); }
 }
@@ -518,6 +517,7 @@ function saveFocusIds(){ localStorage.setItem('crmlicorne_focus', JSON.stringify
 const state = {
   prospects: [], view: 'dashboard', search: '', editingId: null, prodPeriod: 'jour', dashPeriod: 'jour', charts: {},
   visibleColumns: new Set(DEFAULT_VISIBLE_COLS), colMenuOpen: false, focusDays: 7, focusIds: loadFocusIds(),
+  currentComments: []
 };
 
 /* ---------------- Utils ---------------- */
@@ -530,6 +530,7 @@ function addDaysISO(iso, n){ const d = iso? new Date(iso+'T00:00:00') : new Date
 function addDaysDate(d,n){ const c=new Date(d); c.setDate(c.getDate()+n); return c; }
 function mondayOf(d){ const dt=new Date(d); const day=(dt.getDay()+6)%7; dt.setDate(dt.getDate()-day); dt.setHours(0,0,0,0); return dt; }
 function frDate(iso){ if(!iso) return '—'; const d=new Date(iso+'T00:00:00'); return d.toLocaleDateString('fr-FR',{day:'2-digit',month:'short',year:'numeric'}); }
+function frDateTime(iso){ if(!iso) return '—'; const d=new Date(iso); return d.toLocaleDateString('fr-FR',{day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'}); }
 function shortDate(d){ return d.toLocaleDateString('fr-FR',{day:'2-digit',month:'2-digit'}); }
 function daysBetween(a,b){ return Math.round((new Date(b)-new Date(a))/86400000); }
 function appendNote(existing, line){ return (existing && existing.trim()) ? existing.trim() + '\n\n' + line : line; }
@@ -552,7 +553,7 @@ function setConnStatus(ok, msg){
   label.textContent = ok ? 'Connecté à Supabase' : ('Hors ligne' + (msg? ' — '+msg : ''));
 }
 
-/* ---------------- Scoring: thermomètre & tags ---------------- */
+/* ---------------- Scoring: thermomètre ---------------- */
 function temperature(p){
   const propriete = (p.propriete||'').toLowerCase();
   const rdv = (p.rdv||'').toLowerCase();
@@ -614,7 +615,9 @@ async function refreshData(){
 
 async function saveProspect(payload, id){
   const clean = { ...payload };
-  ['nbr_relance','nbr_relance_nrp'].forEach(k=>{ clean[k] = clean[k]===''||clean[k]==null ? null : Number(clean[k]); });
+  ['nbr_relance','nbr_relance_nrp','potentiel_financier','chances_closing'].forEach(k=>{ 
+    clean[k] = clean[k]===''||clean[k]==null ? 0 : Number(clean[k]); 
+  });
   ['premiere_prospection','dernier_contact','dernier_mail','date_relance'].forEach(k=>{ if(clean[k]==='') clean[k]=null; });
   clean.mise_a_jour = new Date().toISOString();
   if(id){
@@ -653,7 +656,27 @@ async function applyNrp(p, note){
   await refreshData();
 }
 
-/* ---------------- RDV reminders (pop-up J-1) ---------------- */
+/* ---------------- Commentaires infinitésimaux avec Date automatique ---------------- */
+async function loadComments(prospectId){
+  if(!sb) return [];
+  const { data, error } = await sb.from(COMMENTS_TABLE).select('*').eq('prospect_id', prospectId).order('created_at', {ascending:false});
+  if(error){ console.error(error); return []; }
+  return data || [];
+}
+
+async function addComment(prospectId, text){
+  if(!text || !text.trim()) return;
+  const { error } = await sb.from(COMMENTS_TABLE).insert({
+    prospect_id: prospectId,
+    commentaire: text.trim()
+  });
+  if(error){ toast("Erreur d'ajout de commentaire : "+error.message, 'error'); return; }
+  toast("Commentaire ajouté !");
+  state.currentComments = await loadComments(prospectId);
+  renderDetailModal();
+}
+
+/* ---------------- RDV reminders ---------------- */
 function loadRdvReminders(){
   let map = {};
   try{ map = JSON.parse(localStorage.getItem('crmlicorne_rdvs')||'{}'); }catch(e){ map = {}; }
@@ -705,13 +728,17 @@ async function applyRdv(p, {date, status, note}){
   await refreshData();
 }
 
-/* ---------------- Filtering ---------------- */
+/* ---------------- Filtering & Sorting par (Potentiel × Closing) ---------------- */
 function matchesSearch(p, term){
   if(!term) return true;
   const hay = [p.nom, p.contact_resp, p.secteur, p.email, p.propriete].map(x=>(x||'').toLowerCase()).join(' ');
   return hay.includes(term.toLowerCase());
 }
-function baseFiltered(){ return state.prospects.filter(p => matchesSearch(p, state.search)); }
+function baseFiltered(){ 
+  // Classé par la valeur pondérée : Potentiel Financier x Chances de Closing
+  return state.prospects.filter(p => matchesSearch(p, state.search))
+    .sort((a, b) => getWeightedScore(b) - getWeightedScore(a));
+}
 
 /* ==================================================================
    Rendering
@@ -728,7 +755,7 @@ function render(){
   if(state.view === 'dashboard') view.innerHTML = dashboardHTML();
   else if(state.view === 'focus') view.innerHTML = focusHTML();
   else if(state.view === 'urgence') view.innerHTML = urgenceHTML();
-  else if(state.view === 'list') view.innerHTML = listHTML(baseFiltered(), 'Tous les prospects', 'Vue complète, triée par nom.');
+  else if(state.view === 'list') view.innerHTML = listHTML(baseFiltered(), 'Tous les prospects', 'Classés par Potentiel Financier × Chances de Closing');
   else if(state.view === 'noncontacte') view.innerHTML = noncontacteHTML();
   else if(state.view === 'friction') view.innerHTML = frictionHTML();
   else if(state.view === 'potentiel') view.innerHTML = potentielHTML();
@@ -753,7 +780,7 @@ function columnChooserHTML(){
         ${COLUMNS.filter(c=>!c.always).map(c=>`<label class="col-menu-item"><input type="checkbox" data-col="${c.key}" ${state.visibleColumns.has(c.key)?'checked':''}> ${c.label}</label>`).join('')}
       </div>
     </div>
-    <span class="hint" style="color:var(--muted);font-size:12px;">↔ Faites défiler le tableau horizontalement pour voir tous les champs</span>
+    <span class="hint" style="color:var(--muted);font-size:12px;">↔ Trié automatiquement par Potentiel × Closing (décroissant)</span>
   </div>`;
 }
 
@@ -770,17 +797,16 @@ function tableShell(rows, emptyMsg, showColChooser=true){
 }
 
 function listHTML(rows, title, hint){
-  const sorted = [...rows].sort((a,b)=> (a.nom||'').localeCompare(b.nom||''));
   return `
     <div class="section-title"><h2>${title}</h2><span class="hint">${hint} · ${rows.length} résultat(s)</span></div>
-    ${tableShell(sorted, "Aucun prospect ne correspond à votre recherche.")}
+    ${tableShell(rows, "Aucun prospect ne correspond à votre recherche.")}
   `;
 }
 
 function focusRowHTML(p){
   return `<tr data-id="${p.id}">
     <td class="sticky-col"><div class="name-cell">${escapeHtml(p.nom)}</div><div class="sub">${escapeHtml(p.secteur||'—')}</div></td>
-    <td>${escapeHtml(p.contact_resp||'—')}</td>
+    <td><b>${getWeightedScore(p).toLocaleString('fr-FR')}</b></td>
     <td>${tempBadge(p)}</td>
     <td>${escapeHtml(p.propriete||'—')}</td>
     <td>${p.dernier_contact? frDate(p.dernier_contact):'—'}</td>
@@ -798,14 +824,13 @@ function focusRowHTML(p){
 function focusTableShell(rows, emptyMsg){
   if(!rows.length) return `<div class="table-wrap"><div class="empty"><div class="big">☀️</div>${emptyMsg}</div></div>`;
   return `<div class="table-wrap"><table style="min-width:760px">
-    <thead><tr><th class="sticky-col">Prospect</th><th>Contact</th><th>Thermomètre</th><th>Statut</th><th>Dernier contact</th><th>Prochaine action</th><th></th></tr></thead>
+    <thead><tr><th class="sticky-col">Prospect</th><th>Score Pondéré</th><th>Thermomètre</th><th>Statut</th><th>Dernier contact</th><th>Prochaine action</th><th></th></tr></thead>
     <tbody>${rows.map(focusRowHTML).join('')}</tbody>
   </table></div>`;
 }
 
 function focusHTML(){
-  const rows = baseFiltered().filter(p => state.focusIds.has(p.id))
-    .sort((a,b)=> (a.nom||'').localeCompare(b.nom||''));
+  const rows = baseFiltered().filter(p => state.focusIds.has(p.id));
   return `
     <div class="section-title">
       <h2>Focus du jour</h2>
@@ -820,12 +845,12 @@ function focusHTML(){
 
 function renderFocusPicker(term){
   const list = $('#focusPickerList');
-  const rows = state.prospects.filter(p=>matchesSearch(p, term)).sort((a,b)=>(a.nom||'').localeCompare(b.nom||''));
+  const rows = state.prospects.filter(p=>matchesSearch(p, term)).sort((a,b)=>getWeightedScore(b)-getWeightedScore(a));
   if(!rows.length){ list.innerHTML = `<div class="empty" style="padding:24px;"><div class="big">🔍</div>Aucun résultat.</div>`; return; }
   list.innerHTML = rows.map(p=>{
     const inFocus = state.focusIds.has(p.id);
     return `<div class="focus-picker-item ${inFocus?'in-focus':''}" data-id="${p.id}">
-      <div><div class="fp-name">${escapeHtml(p.nom)}</div><div class="fp-sub">${escapeHtml(p.contact_resp||p.secteur||'—')}</div></div>
+      <div><div class="fp-name">${escapeHtml(p.nom)}</div><div class="fp-sub">${escapeHtml(p.contact_resp||p.secteur||'—')} · Score: ${getWeightedScore(p).toLocaleString('fr-FR')}</div></div>
       <div class="fp-check">${inFocus? '✓ Dans le focus' : '+ Ajouter'}</div>
     </div>`;
   }).join('');
@@ -848,8 +873,7 @@ function openFocusPicker(){
 
 function urgenceHTML(){
   const today = todayISO();
-  const due = baseFiltered().filter(p => p.date_relance && p.date_relance <= today)
-    .sort((a,b)=> a.date_relance.localeCompare(b.date_relance));
+  const due = baseFiltered().filter(p => p.date_relance && p.date_relance <= today);
   const late = due.filter(p=>p.date_relance < today).length;
   return `
     <div class="grid cols-3" style="margin-bottom:6px;">
@@ -857,7 +881,7 @@ function urgenceHTML(){
       <div class="card"><div class="kpi-label">Dont en retard</div><div class="kpi-value num" style="color:var(--danger)">${late}</div></div>
       <div class="card"><div class="kpi-label">Relances planifiées (total base)</div><div class="kpi-value num">${state.prospects.filter(p=>p.date_relance).length}</div></div>
     </div>
-    <div class="section-title"><h2>Matrice d'urgence</h2><span class="hint">Calcul automatique · trié par date de relance la plus ancienne</span></div>
+    <div class="section-title"><h2>Matrice d'urgence</h2><span class="hint">Calcul automatique · classé par valeur pondérée (Potentiel × %)</span></div>
     ${tableShell(due, "Aucune relance due aujourd'hui — la matrice d'urgence est à jour ✅")}
   `;
 }
@@ -865,8 +889,7 @@ function urgenceHTML(){
 function noncontacteHTML(){
   const today = todayISO();
   const X = Number(state.focusDays) || 7;
-  const stale = baseFiltered().filter(p => !p.dernier_contact || daysBetween(p.dernier_contact, today) >= X)
-    .sort((a,b)=> (a.dernier_contact||'0000-00-00').localeCompare(b.dernier_contact||'0000-00-00'));
+  const stale = baseFiltered().filter(p => !p.dernier_contact || daysBetween(p.dernier_contact, today) >= X);
   return `
     <div class="section-title">
       <h2>Non contactés depuis X jours</h2>
@@ -885,24 +908,17 @@ function noncontacteHTML(){
 
 function frictionHTML(){
   const rows = baseFiltered()
-    .filter(p => (p.nbr_relance_nrp||0) > 0 || (p.mise_a_jour && daysBetween(p.mise_a_jour, new Date()) > 14))
-    .sort((a,b)=> (b.nbr_relance_nrp||0) - (a.nbr_relance_nrp||0));
+    .filter(p => (p.nbr_relance_nrp||0) > 0 || (p.mise_a_jour && daysBetween(p.mise_a_jour, new Date()) > 14));
   return `
-    <div class="section-title"><h2>Tri de friction</h2><span class="hint">Classé par relances NRP décroissantes · fiches stagnantes (+14 jours) signalées</span></div>
+    <div class="section-title"><h2>Tri de friction</h2><span class="hint">Classé par relances NRP / Stagnation</span></div>
     ${tableShell(rows, "Aucune fiche à friction — tout le monde répond correctement 🎉")}
   `;
 }
 
 function potentielHTML(){
-  const rows = baseFiltered().filter(p => (p.fmfp||'').toLowerCase()==='yes')
-    .sort((a,b)=>{
-      const wa = SECTEURS_POIDS.indexOf(a.secteur), wb = SECTEURS_POIDS.indexOf(b.secteur);
-      const ra = wa===-1? 999:wa, rb = wb===-1?999:wb;
-      if(ra!==rb) return ra-rb;
-      return (a.nom||'').localeCompare(b.nom||'');
-    });
+  const rows = baseFiltered().filter(p => (p.fmfp||'').toLowerCase()==='yes');
   return `
-    <div class="section-title"><h2>Potentiel FMFP</h2><span class="hint">Éligibles FMFP, secteurs à fort budget en priorité (${SECTEURS_POIDS.join(', ')})</span></div>
+    <div class="section-title"><h2>Potentiel FMFP</h2><span class="hint">Éligibles FMFP · Classés par Valeur Pondérée</span></div>
     ${tableShell(rows, "Aucun prospect FMFP pour le moment.")}
   `;
 }
@@ -916,12 +932,6 @@ function settingsHTML(){
         <div class="kv"><b>Projet</b><span>${escapeHtml(CFG.url)}</span></div>
         <div class="kv"><b>Clé anon / publishable</b><code class="inline">${escapeHtml(masked)}</code></div>
         <div class="kv"><b>Table</b><code class="inline">${TABLE}</code></div>
-        <p style="font-size:12.5px;color:var(--muted);line-height:1.6;">
-          Cette clé "anon public" est faite pour être visible côté client — c'est normal qu'elle apparaisse ici.
-          Avec la configuration actuelle (RLS ouverte), toute personne possédant ce lien et cette clé peut lire et
-          modifier les données : parfait pour un usage interne/personnel, mais si plusieurs personnes doivent avoir
-          des accès distincts, il faudra ajouter l'authentification Supabase (login par utilisateur).
-        </p>
         <form id="settingsForm">
           <div class="field"><label>Project URL</label><input name="url" value="${escapeHtml(CFG.url)}"></div>
           <div class="field"><label>Anon / publishable key</label><input name="key" value="${escapeHtml(CFG.key)}"></div>
@@ -929,22 +939,19 @@ function settingsHTML(){
         </form>
       </div>
       <div class="card">
-        <h3 style="margin-top:0;">À propos de cette application</h3>
+        <h3 style="margin-top:0;">À propos de cette version</h3>
         <p style="font-size:13px;color:var(--muted);line-height:1.7;margin-top:0;">
-          CRM Licorne pilote vos ${state.prospects.length} prospects avec les 19 champs d'origine, un thermomètre
-          d'intérêt calculé automatiquement (statut, RDV, FMFP, intérêt), des tris stratégiques (urgence, friction,
-          potentiel FMFP) et des tableaux de bord Jour / Semaine / Mois.
-        </p>
-        <p style="font-size:13px;color:var(--muted);line-height:1.7;">
-          Le thermomètre et les tags de formation sont calculés à la volée à partir des champs existants — ils ne
-          sont pas stockés en base, donc ils restent toujours cohérents avec les données affichées.
+          Fonctionnalités avancées actives :<br>
+          • Champs <b>Potentiel financier</b> et <b>Chances de closing (%)</b> modifiables.<br>
+          • Classement automatique des opportunités selon <b>Potentiel × Chances de closing</b>.<br>
+          • Module de <b>commentaires infinis horodatés</b> automatiquement avec Supabase.
         </p>
       </div>
     </div>
   `;
 }
 
-/* ---------------- Dashboard: KPIs + charts ---------------- */
+/* ---------------- Dashboard KPIs & Charts ---------------- */
 function periodRange(period){
   const today = todayISO();
   if(period==='jour') return { start: today, end: today };
@@ -955,6 +962,7 @@ function inRange(v, range){ return !!v && v >= range.start && v <= range.end; }
 
 function dashboardHTML(){
   const total = state.prospects.length;
+  const totalWeighted = state.prospects.reduce((acc, p) => acc + getWeightedScore(p), 0);
   const qualifies = state.prospects.filter(p => (p.propriete||'').toLowerCase().includes('qualifié') && !(p.propriete||'').toLowerCase().includes('pas qualifié')).length;
   const reachable = state.prospects.filter(p => p.dernier_contact && !(p.propriete||'').toLowerCase().includes('nrp')).length;
   const attempted = state.prospects.filter(p => (p.nbr_relance||0) > 0 || p.dernier_contact).length;
@@ -968,9 +976,9 @@ function dashboardHTML(){
   return `
   <div class="grid cols-4">
     <div class="card"><div class="kpi-label">Prospects au total</div><div class="kpi-value num">${total}</div><div class="kpi-sub">Base CRM Licorne</div></div>
+    <div class="card"><div class="kpi-label">Valeur du Pipeline Pondérée</div><div class="kpi-value num" style="color:var(--brand);">${totalWeighted.toLocaleString('fr-FR')}</div><div class="kpi-sub">∑ (Potentiel × Closing %)</div></div>
     <div class="card"><div class="kpi-label">Taux de joignabilité</div><div class="kpi-value num">${joignabilite}%</div><div class="kpi-sub">Contacts aboutis / tentatives</div></div>
     <div class="card"><div class="kpi-label">Taux de conversion</div><div class="kpi-value num">${conversion}%</div><div class="kpi-sub">Fiches qualifiées / total</div></div>
-    <div class="card"><div class="kpi-label">Relances dues aujourd'hui</div><div class="kpi-value num">${state.prospects.filter(p=>p.date_relance && p.date_relance<=todayISO()).length}</div><div class="kpi-sub">Voir Matrice d'urgence</div></div>
   </div>
 
   <div class="section-title">
@@ -987,7 +995,7 @@ function dashboardHTML(){
     <div class="card"><div class="kpi-label">RDV fixés / présentés</div><div class="kpi-value num">${rdvs}</div></div>
   </div>
 
-  <div class="section-title"><h2>Pilotage graphique</h2><span class="hint">Recalculé automatiquement à chaque changement</span></div>
+  <div class="section-title"><h2>Pilotage graphique</h2><span class="hint">Recalculé automatiquement</span></div>
   <div class="grid cols-2">
     <div class="card"><div class="chart-title">Funnel du pipeline commercial</div><canvas id="chartFunnel" height="200"></canvas></div>
     <div class="card"><div class="chart-title">Thermomètre d'intérêt</div><canvas id="chartThermo" height="200"></canvas></div>
@@ -1003,23 +1011,21 @@ function dashboardHTML(){
       </div>
       <canvas id="chartProductivity" height="200"></canvas>
     </div>
-    <div class="card" style="grid-column:1/-1;"><div class="chart-title">Cartographie Secteur &amp; FMFP</div><canvas id="chartSecteur" height="140"></canvas></div>
   </div>
   `;
 }
 
 function themeColor(varName){ return getComputedStyle(document.documentElement).getPropertyValue(varName).trim(); }
-
 function destroyCharts(){ Object.values(state.charts).forEach(c => c && c.destroy()); state.charts = {}; }
 
 function buildDashboardCharts(){
   destroyCharts();
-  const text = themeColor('--text'), muted = themeColor('--muted'), line = themeColor('--line');
+  const muted = themeColor('--muted'), line = themeColor('--line');
   Chart.defaults.color = muted;
   Chart.defaults.borderColor = line;
   Chart.defaults.font.family = "Inter, sans-serif";
 
-  // Funnel (horizontal bar)
+  // Funnel
   const stages = ['Prospection','Relance','RDV obtenu','Qualification'];
   const counts = [1,2,3,4].map(r => state.prospects.filter(p=>stageRank(p)>=r).length);
   state.charts.funnel = new Chart($('#chartFunnel'), {
@@ -1028,7 +1034,7 @@ function buildDashboardCharts(){
     options:{ indexAxis:'y', plugins:{legend:{display:false}}, scales:{ x:{ grid:{color:line} }, y:{ grid:{display:false} } } }
   });
 
-  // Thermomètre (donut)
+  // Thermomètre
   const tempCounts = {brulant:0,chaud:0,tiede:0,froid:0};
   state.prospects.forEach(p => tempCounts[temperature(p)]++);
   state.charts.thermo = new Chart($('#chartThermo'), {
@@ -1038,7 +1044,7 @@ function buildDashboardCharts(){
     options:{ plugins:{ legend:{ position:'bottom', labels:{boxWidth:10, boxHeight:10} } }, cutout:'62%' }
   });
 
-  // Intéret (bar horizontal)
+  // Intérêt
   const tagCounts = {};
   state.prospects.forEach(p => normalizeInteretTags(p.interet).forEach(t => tagCounts[t]=(tagCounts[t]||0)+1));
   const tagEntries = Object.entries(tagCounts).sort((a,b)=>b[1]-a[1]);
@@ -1050,19 +1056,6 @@ function buildDashboardCharts(){
 
   // Productivité
   buildProductivityChart();
-
-  // Secteur & FMFP (stacked)
-  const secteurs = distinctValues('secteur');
-  const yes = secteurs.map(s => state.prospects.filter(p=>p.secteur===s && (p.fmfp||'').toLowerCase()==='yes').length);
-  const no = secteurs.map(s => state.prospects.filter(p=>p.secteur===s && (p.fmfp||'').toLowerCase()==='no').length);
-  state.charts.secteur = new Chart($('#chartSecteur'), {
-    type:'bar',
-    data:{ labels: secteurs, datasets:[
-      { label:'FMFP: Yes', data:yes, backgroundColor: themeColor('--brand'), borderRadius:4 },
-      { label:'FMFP: No', data:no, backgroundColor: themeColor('--line'), borderRadius:4 },
-    ]},
-    options:{ plugins:{legend:{position:'bottom'}}, scales:{ x:{stacked:true, grid:{display:false}}, y:{stacked:true, grid:{color:line}} } }
-  });
 }
 
 function buildProductivityChart(){
@@ -1089,7 +1082,7 @@ function buildProductivityChart(){
 }
 
 /* ==================================================================
-   Modal: add / edit prospect
+   Modal: Add / Edit Prospect
    ================================================================== */
 function fieldHTML(f, value){
   const dl = f.list ? `<datalist id="dl_${f.key}">${distinctValues(f.key).map(v=>`<option value="${escapeHtml(v)}">`).join('')}</datalist>` : '';
@@ -1100,14 +1093,14 @@ function fieldHTML(f, value){
     </select></div>`;
   }
   if(f.type==='textarea'){
-    return `<div class="field ${f.grow?'grow':''}"><label>${f.label}</label><textarea name="${f.key}" placeholder="Notes, comptes-rendus d'appels, historique d'échange…">${escapeHtml(v)}</textarea></div>`;
+    return `<div class="field ${f.grow?'grow':''}"><label>${f.label}</label><textarea name="${f.key}" placeholder="Notes, comptes-rendus d'appels, historique...">${escapeHtml(v)}</textarea></div>`;
   }
   const listAttr = f.list ? `list="dl_${f.key}"` : '';
   return `<div class="field"><label>${f.label}</label><input type="${f.type}" name="${f.key}" value="${f.type==='date'? v : escapeHtml(v)}" ${listAttr}>${dl}</div>`;
 }
 
 function buildProspectForm(prospect){
-  const groups = ['Identité','Qualification','Suivi','Notes'];
+  const groups = ['Identité','Évaluation','Qualification','Suivi','Notes'];
   return groups.map(g => `
     <div class="fieldset-title">${g}</div>
     ${FIELDS.filter(f=>f.group===g).map(f => fieldHTML(f, prospect ? prospect[f.key] : (f.key==='premiere_prospection'? todayISO() : ''))).join('')}
@@ -1115,27 +1108,50 @@ function buildProspectForm(prospect){
 }
 
 /* ==================================================================
-   Fiche détaillée prospect (clic sur une ligne)
+   Fiche détaillée prospect (avec commentaires infinis)
    ================================================================== */
 let detailTarget = null;
 let detailEditing = false;
 
 function detailReadHTML(p){
+  const weighted = getWeightedScore(p);
   const rows = [
     ['Nom de la boîte', escapeHtml(p.nom||'—')],
     ['Genre (H/F)', escapeHtml(p.genre||'—')],
+    ['Potentiel Financier', (Number(p.potentiel_financier)||0).toLocaleString('fr-FR')],
+    ['Chances de Closing (%)', (p.chances_closing||0) + '%'],
+    ['Valeur Pondérée (P × %)', `<b>${weighted.toLocaleString('fr-FR')}</b>`],
     ['Statut', escapeHtml(p.propriete||'—')],
     ['Besoin / intérêt de formation', escapeHtml(p.interet||'—')],
     ['Dernier contact', p.dernier_contact? frDate(p.dernier_contact):'—'],
-    ['Dernier mail', p.dernier_mail? frDate(p.dernier_mail):'—'],
   ];
+
+  const commentsList = state.currentComments.length 
+    ? state.currentComments.map(c => `
+        <div class="comment-box">
+          <div class="comment-head"><span>Posté le</span><span>${frDateTime(c.created_at)}</span></div>
+          <div class="comment-body">${escapeHtml(c.commentaire)}</div>
+        </div>
+      `).join('')
+    : '<div style="color:var(--muted);font-size:12.5px;">Aucun commentaire pour le moment.</div>';
+
   return `
     <div class="detail-grid">
       ${rows.map(([label,val])=>`<div class="detail-item"><div class="detail-label">${label}</div><div class="detail-value">${val}</div></div>`).join('')}
     </div>
+
     <div class="detail-item" style="margin-top:16px;">
-      <div class="detail-label">Notes &amp; prochaine action</div>
-      <div class="detail-value detail-notes">${p.prochain_action && p.prochain_action.trim() ? escapeHtml(p.prochain_action).replace(/\n/g,'<br>') : '—'}</div>
+      <div class="detail-label">Notes globales</div>
+      <div class="detail-value" style="white-space:pre-wrap;background:var(--panel-2);padding:10px;border-radius:8px;border:1px solid var(--line);">${p.prochain_action && p.prochain_action.trim() ? escapeHtml(p.prochain_action) : '—'}</div>
+    </div>
+
+    <div class="comments-section">
+      <div class="detail-label" style="margin-bottom:8px;">Commentaires / Chronologie (${state.currentComments.length})</div>
+      <div class="comments-list">${commentsList}</div>
+      <div class="add-comment-form">
+        <textarea id="newCommentText" placeholder="Ajouter un nouveau commentaire... (la date sera ajoutée automatiquement)"></textarea>
+        <button class="btn primary sm" id="addCommentBtn" style="height:50px;">Publier</button>
+      </div>
     </div>
   `;
 }
@@ -1146,13 +1162,17 @@ function detailEditFormHTML(p){
       <div class="field"><label>Nom (entreprise / prospect)</label><input type="text" id="d_nom" value="${escapeHtml(p.nom||'')}"></div>
       <div class="field"><label>Genre (H/F)</label><input type="text" id="d_genre" value="${escapeHtml(p.genre||'')}"></div>
     </div>
+    <div class="field-row">
+      <div class="field"><label>Potentiel Financier</label><input type="number" id="d_potentiel" value="${p.potentiel_financier||0}"></div>
+      <div class="field"><label>Chances de Closing (%)</label><input type="number" id="d_closing" value="${p.chances_closing||0}"></div>
+    </div>
     <div class="field"><label>Statut (Propriété)</label><input type="text" id="d_propriete" value="${escapeHtml(p.propriete||'')}"></div>
     <div class="field"><label>Besoin / intérêt de formation</label><input type="text" id="d_interet" value="${escapeHtml(p.interet||'')}"></div>
     <div class="field-row">
       <div class="field"><label>Dernier contact</label><input type="date" id="d_dernier_contact" value="${p.dernier_contact||''}"></div>
       <div class="field"><label>Dernier mail</label><input type="date" id="d_dernier_mail" value="${p.dernier_mail||''}"></div>
     </div>
-    <div class="field grow"><label>Notes &amp; prochaine action</label><textarea id="d_prochain_action" placeholder="Notes, compte-rendu, prochaine action…">${escapeHtml(p.prochain_action||'')}</textarea></div>
+    <div class="field grow"><label>Notes &amp; prochaine action</label><textarea id="d_prochain_action">${escapeHtml(p.prochain_action||'')}</textarea></div>
   `;
 }
 
@@ -1162,11 +1182,22 @@ function renderDetailModal(){
   $('#detailModalTitle').innerHTML = `${escapeHtml(p.nom)} &nbsp; ${tempBadge(p)}`;
   $('#detailBody').innerHTML = detailEditing ? detailEditFormHTML(p) : detailReadHTML(p);
   $('#detailActionBtn').textContent = detailEditing ? 'Enregistrer' : 'Modifier';
+
+  if(!detailEditing){
+    const btnAdd = $('#addCommentBtn');
+    if(btnAdd){
+      btnAdd.onclick = () => {
+        const txt = $('#newCommentText').value;
+        addComment(p.id, txt);
+      };
+    }
+  }
 }
 
-function openDetailModal(p){
+async function openDetailModal(p){
   detailTarget = p;
   detailEditing = false;
+  state.currentComments = await loadComments(p.id);
   renderDetailModal();
   $('#detailOverlay').classList.remove('hidden');
 }
@@ -1181,6 +1212,8 @@ async function handleDetailAction(){
   const patch = {
     nom: $('#d_nom').value.trim(),
     genre: $('#d_genre').value.trim(),
+    potentiel_financier: Number($('#d_potentiel').value) || 0,
+    chances_closing: Number($('#d_closing').value) || 0,
     propriete: $('#d_propriete').value.trim(),
     interet: $('#d_interet').value.trim(),
     dernier_contact: $('#d_dernier_contact').value || null,
@@ -1215,7 +1248,7 @@ async function handleSaveProspect(){
   if(ok) closeOverlay($('#prospectOverlay'));
 }
 
-/* ---------------- Delegated event handling ---------------- */
+/* ---------------- Event listeners ---------------- */
 function wireDynamicHandlers(){
   $$('#view [data-action]').forEach(btn=>{
     btn.onclick = (e)=>{
@@ -1279,7 +1312,6 @@ function openNrpModal(p){ nrpTarget = p; $('#nrpName').textContent = p.nom; $('#
 let rdvTarget = null;
 function openRdvModal(p){ rdvTarget = p; $('#rdvName').textContent = p.nom; $('#rdvDate').value = todayISO(); $('#rdvNote').value=''; $('#rdvOverlay').classList.remove('hidden'); }
 
-/* ---------------- Static wiring ---------------- */
 function initStaticHandlers(){
   $$('.navitem').forEach(btn => btn.onclick = ()=>{ state.view = btn.dataset.view; render(); closeSidebar(); });
   $('#addBtn').onclick = ()=> openProspectModal(null);
