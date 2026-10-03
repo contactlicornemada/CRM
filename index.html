@@ -258,9 +258,102 @@
   .login-error{color:var(--danger);font-size:12.5px;margin:-6px 0 14px;min-height:16px;}
   .login-card .btn{width:100%;justify-content:center;}
   #app.locked{display:none;}
+
+/* ================================================================
+   LICORNE HUD / FUTURISTIC INTERFACE OVERRIDE
+   Inspired by the supplied cyan/navy futuristic dashboard reference.
+   ================================================================ */
+:root{
+  --bg:#031a32; --panel:rgba(3,37,62,.82); --panel-2:rgba(4,49,76,.72);
+  --line:rgba(21,220,236,.34); --text:#d9fbff; --muted:#6da8b8;
+  --brand:#11dce5; --brand-ink:#031a32; --brand-soft:rgba(17,220,229,.12);
+  --danger:#ff6f87; --danger-soft:rgba(255,111,135,.12);
+  --brulant:#ff7f96; --chaud:#ffb75c; --tiede:#d7d76a; --froid:#3b9fe8;
+  --radius:2px; --radius-sm:2px;
+  --shadow:0 0 0 1px rgba(17,220,229,.05), 0 0 28px rgba(0,202,230,.08);
+  color-scheme:dark;
+}
+html,body{background:#031a32;color:var(--text);min-height:100%;}
+body{
+  background-image:
+    linear-gradient(rgba(9,88,118,.08) 1px,transparent 1px),
+    linear-gradient(90deg,rgba(9,88,118,.08) 1px,transparent 1px),
+    radial-gradient(circle at 70% 35%,rgba(0,218,235,.09),transparent 30%),
+    radial-gradient(circle at 20% 75%,rgba(255,101,144,.05),transparent 25%);
+  background-size:32px 32px,32px 32px,100% 100%,100% 100%;
+  overflow-x:hidden;
+}
+body:before{content:"";position:fixed;inset:0;pointer-events:none;z-index:0;background:linear-gradient(90deg,transparent 49.8%,rgba(26,231,239,.045) 50%,transparent 50.2%);}
+#particleCanvas{position:fixed;inset:0;width:100%;height:100%;z-index:1;pointer-events:none;opacity:.9;}
+#app,#loginScreen{position:relative;z-index:2;}
+#app{background:transparent;}
+#sidebar{width:230px;background:rgba(2,27,49,.92);border-right:1px solid rgba(22,219,235,.32);padding:18px 12px;gap:20px;box-shadow:12px 0 40px rgba(0,0,0,.18);}
+#sidebar:after{content:"";position:absolute;right:-1px;top:38px;width:1px;height:95px;background:linear-gradient(transparent,var(--brand),transparent);}
+.brand{letter-spacing:.12em;text-transform:uppercase;color:#a9f8ff;text-shadow:0 0 12px rgba(17,220,229,.45);font-size:14px;}
+.brand-mark{width:28px;height:28px;border-radius:2px;background:transparent;border:1px solid #16dce8;box-shadow:inset 0 0 0 3px rgba(17,220,229,.08),0 0 15px rgba(17,220,229,.35);position:relative;}
+.brand-mark:before,.brand-mark:after{content:"";position:absolute;background:#ff7c9b;box-shadow:0 0 9px #ff7c9b;}
+.brand-mark:before{width:5px;height:5px;left:5px;top:5px}.brand-mark:after{width:5px;height:5px;right:5px;bottom:5px}
+nav{gap:3px} nav .navlabel{color:#4d91a4;text-transform:uppercase;letter-spacing:.16em;margin:13px 8px 5px;font-size:9px}
+nav button.navitem{border-radius:0;border-left:2px solid transparent;color:#6ca8b7;letter-spacing:.03em;padding:9px 10px;position:relative;overflow:hidden}
+nav button.navitem:hover{background:rgba(17,220,229,.06);color:#d8fbff;border-left-color:rgba(17,220,229,.45)}
+nav button.navitem.active{background:linear-gradient(90deg,rgba(17,220,229,.13),transparent);color:#1ee8ee;border-left-color:#1ee8ee;box-shadow:inset 0 0 18px rgba(17,220,229,.04)}
+nav button.navitem .ic{color:#22dce5;text-shadow:0 0 8px rgba(34,220,229,.5)}
+.sidebar-foot{color:#4f8999}.sidebar-foot:before{content:"SYSTEM STATUS //";display:block;color:#356f81;font-size:8px;letter-spacing:.14em;margin-bottom:7px}
+#main{background:transparent}
+#topbar{background:rgba(2,25,45,.82);border-bottom:1px solid rgba(20,216,234,.27);backdrop-filter:blur(12px);padding:12px 22px;}
+#topbar h1{color:#d8fbff;letter-spacing:.06em;text-transform:uppercase;font-size:17px}
+.searchbox{background:rgba(4,46,71,.65);border:1px solid rgba(17,220,229,.3);border-radius:2px;box-shadow:inset 0 0 14px rgba(0,209,230,.04);}
+.searchbox input{color:#c9f7fb}.searchbox span{color:#15dce7}
+.iconbtn,.btn{background:rgba(4,47,72,.72);border:1px solid rgba(18,218,234,.32);border-radius:2px;color:#bcecf1;box-shadow:inset 0 0 12px rgba(10,206,225,.035)}
+.iconbtn:hover,.btn:hover{background:rgba(9,69,96,.8);border-color:rgba(18,218,234,.6)}
+.btn.primary{background:linear-gradient(90deg,#0b8e9e,#10cbd1);border-color:#16e0e5;color:#021b31;box-shadow:0 0 18px rgba(14,214,227,.2)}
+.btn.danger{background:#7f2f49;border-color:#ff6f87}
+#view{max-width:1500px;padding:24px 26px 60px}
+.card,.table-wrap{background:linear-gradient(145deg,rgba(4,48,74,.78),rgba(2,31,55,.74));border:1px solid rgba(16,207,226,.26);border-radius:2px;box-shadow:var(--shadow);position:relative;overflow:hidden}
+.card:before,.table-wrap:before{content:"";position:absolute;left:0;top:0;width:52px;height:1px;background:#19dce7;box-shadow:0 0 10px #19dce7}
+.card:after{content:"";position:absolute;right:0;bottom:0;width:34px;height:1px;background:#ff7795;box-shadow:0 0 10px #ff7795}
+.kpi-label,.sub,.hint,.detail-label{color:#5d9caf}.kpi-value{color:#d9fdff;text-shadow:0 0 12px rgba(20,219,231,.28)}
+.section-title h2,.chart-title{color:#bff5fa;text-transform:uppercase;letter-spacing:.07em}
+.period-toggle,.chip,.badge-soft{background:rgba(6,53,78,.7);border-color:rgba(19,211,229,.24);border-radius:2px;color:#70aebc}
+.period-toggle button{border-radius:1px}.period-toggle button.active{background:rgba(16,208,222,.12);color:#d6fbff;box-shadow:inset 0 0 12px rgba(16,208,222,.1)}
+table{color:#bdebf0} thead th{background:rgba(4,58,82,.8);color:#4f9aac;border-bottom:1px solid rgba(17,216,232,.26);text-transform:uppercase;letter-spacing:.05em;font-size:10px}
+tbody td{border-bottom:1px solid rgba(14,143,166,.17)} tbody tr:hover{background:rgba(12,177,195,.07)}
+th.sticky-col,td.sticky-col{background:rgba(3,37,61,.95)} tbody tr:hover td.sticky-col{background:rgba(4,55,78,.98)}
+.name-cell{color:#d7fbff}.temp{border-radius:2px;border:1px solid currentColor;background:transparent!important;text-transform:uppercase;letter-spacing:.04em}
+.modal{background:linear-gradient(145deg,#062b45,#031d35);border:1px solid rgba(17,220,229,.4);border-radius:2px;box-shadow:0 0 55px rgba(0,0,0,.45),0 0 30px rgba(11,204,225,.1)}
+.modal-head,.modal-foot{border-color:rgba(17,220,229,.2)}.modal-head h3{color:#bff8fc;letter-spacing:.05em;text-transform:uppercase}
+.field input,.field select,.field textarea{background:rgba(2,31,52,.8);border-color:rgba(17,209,228,.25);border-radius:2px;color:#d9fbff}
+.field input:focus,.field select:focus,.field textarea:focus{border-color:#14dce7;box-shadow:0 0 12px rgba(20,220,231,.1)}
+.overlay{background:rgba(0,10,20,.72);backdrop-filter:blur(4px)}
+#loginScreen{background:radial-gradient(circle at 50% 42%,rgba(8,93,118,.24),transparent 34%),#031a32;overflow:hidden}
+#loginScreen:before{content:"SYSTEM // CRM LICORNE // SECURE NODE";position:absolute;top:28px;left:34px;color:#187c8f;font:9px monospace;letter-spacing:.2em}
+#loginScreen:after{content:"AUTHORIZATION REQUIRED";position:absolute;right:34px;bottom:28px;color:#315f72;font:9px monospace;letter-spacing:.18em}
+.login-card{background:linear-gradient(145deg,rgba(5,52,78,.92),rgba(2,27,49,.92));border:1px solid rgba(16,218,231,.42);border-radius:2px;box-shadow:0 0 70px rgba(0,0,0,.42),0 0 30px rgba(10,215,231,.08);padding:38px 32px;position:relative}
+.login-card:before{content:"";position:absolute;left:-1px;top:-1px;width:75px;height:1px;background:#16dfe8;box-shadow:0 0 12px #16dfe8}.login-card:after{content:"";position:absolute;right:-1px;bottom:-1px;width:65px;height:1px;background:#ff7896;box-shadow:0 0 12px #ff7896}
+.login-card .brand{margin-bottom:28px}.login-card h2{color:#d6fbff;letter-spacing:.12em;text-transform:uppercase}.sub-login{color:#4e9aac!important}
+.login-error{color:#ff7895}.login-card .btn{margin-top:4px;height:42px;letter-spacing:.08em;text-transform:uppercase}
+#particleCanvas{mix-blend-mode:screen}
+#bootOverlay{position:fixed;inset:0;z-index:500;background:#02192f;display:flex;align-items:center;justify-content:center;overflow:hidden;opacity:1;transition:opacity .45s ease}
+#bootOverlay.hidden{opacity:0;pointer-events:none}
+.boot-grid{position:absolute;inset:0;background-image:linear-gradient(rgba(14,198,220,.08) 1px,transparent 1px),linear-gradient(90deg,rgba(14,198,220,.08) 1px,transparent 1px);background-size:42px 42px;mask-image:linear-gradient(to bottom,transparent,#000 20%,#000 80%,transparent)}
+.boot-panel{position:relative;width:min(520px,88vw);text-align:center;padding:30px;border:1px solid rgba(17,220,229,.35);background:rgba(2,30,52,.72);box-shadow:0 0 50px rgba(0,213,230,.08)}
+.boot-panel:before{content:"BOOT SEQUENCE // LICORNE";display:block;color:#3d94a6;font:10px monospace;letter-spacing:.2em;margin-bottom:22px}
+.boot-ring{width:210px;height:210px;margin:0 auto 22px;position:relative;border-radius:50%;display:grid;place-items:center;filter:drop-shadow(0 0 14px rgba(18,221,233,.25))}
+.boot-ring svg{position:absolute;inset:0;width:100%;height:100%;transform:rotate(-90deg)}
+.boot-ring .ring-track{fill:none;stroke:rgba(22,204,224,.12);stroke-width:5}.boot-ring .ring-progress{fill:none;stroke:#19e1e8;stroke-width:5;stroke-linecap:square;stroke-dasharray:615;stroke-dashoffset:615;transition:stroke-dashoffset .08s linear}
+.boot-ring:before{content:"";position:absolute;width:154px;height:154px;border:1px solid rgba(20,212,229,.25);border-radius:50%;animation:bootSpin 4s linear infinite}
+.boot-ring:after{content:"";position:absolute;width:188px;height:188px;border:1px dashed rgba(255,113,145,.25);border-radius:50%;animation:bootSpinReverse 8s linear infinite}
+.boot-percent{position:relative;font:700 30px 'Space Grotesk',sans-serif;color:#d9fdff;text-shadow:0 0 14px rgba(17,220,229,.55)}
+.boot-percent small{display:block;font:9px monospace;color:#4f9eaf;letter-spacing:.16em;margin-top:2px}
+.boot-message{margin:0;color:#bff8fb;font:600 18px 'Space Grotesk',sans-serif;letter-spacing:.06em}.boot-message span{color:#ff8aa3;text-shadow:0 0 12px rgba(255,113,145,.45)}
+.boot-status{margin-top:10px;color:#4f96a7;font:10px monospace;letter-spacing:.12em}
+@keyframes bootSpin{to{transform:rotate(360deg)}}@keyframes bootSpinReverse{to{transform:rotate(-360deg)}}
+@media(max-width:860px){#sidebar{background:rgba(2,27,49,.98)}#view{padding:18px 14px 55px}}
+
 </style>
 </head>
 <body>
+<canvas id="particleCanvas" aria-hidden="true"></canvas>
 <div id="loginScreen">
   <div class="login-card">
     <div class="brand"><div class="brand-mark"></div>CRM Licorne</div>
@@ -284,6 +377,8 @@
       <button class="navitem" data-view="urgence"><span class="ic">⏰</span>Matrice d'urgence</button>
       <div class="navlabel">Prospects</div>
       <button class="navitem" data-view="list"><span class="ic">≡</span>Tous les prospects</button>
+      <button class="navitem" data-view="updates"><span class="ic">↻</span>Mises à jour</button>
+      <button class="navitem" data-view="nrp"><span class="ic">📵</span>Dernières mises à jour NRP</button>
       <button class="navitem" data-view="noncontacte"><span class="ic">⏱</span>Non contactés</button>
       <button class="navitem" data-view="friction"><span class="ic">⟳</span>Tri de friction</button>
       <button class="navitem" data-view="potentiel"><span class="ic">✦</span>Potentiel FMFP</button>
@@ -308,6 +403,19 @@
       </div>
     </div>
     <div id="view"></div>
+  </div>
+</div>
+
+
+<div id="bootOverlay" class="hidden" aria-live="polite">
+  <div class="boot-grid"></div>
+  <div class="boot-panel">
+    <div class="boot-ring">
+      <svg viewBox="0 0 220 220" aria-hidden="true"><circle class="ring-track" cx="110" cy="110" r="98"></circle><circle id="bootRingProgress" class="ring-progress" cx="110" cy="110" r="98"></circle></svg>
+      <div class="boot-percent"><span id="bootPercent">0</span><small>INITIALISATION</small></div>
+    </div>
+    <p class="boot-message">Prête à faire des millions <span>Angela</span> ?</p>
+    <div class="boot-status" id="bootStatus">AUTHENTIFICATION VALIDÉE // CHARGEMENT DES MODULES</div>
   </div>
 </div>
 
@@ -496,6 +604,7 @@ const COLUMNS = [
     const overdue = p.date_relance && p.date_relance < todayISO();
     return `${p.date_relance? frDate(p.date_relance):'—'} ${overdue?'<span class="badge-soft badge-warn">en retard</span>':''}`;
   }},
+  {key:'mise_a_jour', label:'Dernière mise à jour', render:p=>updateDateTime(p)},
   {key:'nbr_relance_nrp', label:'NRP', render:p=>p.nbr_relance_nrp ?? 0},
   {key:'actions', label:'', always:true,
     render:p=>`<div class="row-actions">
@@ -508,7 +617,7 @@ const COLUMNS = [
 function visibleCols(){ return COLUMNS.filter(c => c.always || state.visibleColumns.has(c.key)); }
 
 /* ---------------- State ---------------- */
-const DEFAULT_VISIBLE_COLS = ['nom','weighted','potentiel_financier','temp','propriete','date_relance','actions'];
+const DEFAULT_VISIBLE_COLS = ['nom','weighted','potentiel_financier','temp','propriete','mise_a_jour','date_relance','actions'];
 function loadFocusIds(){
   try{ return new Set(JSON.parse(localStorage.getItem('crmlicorne_focus')||'[]')); }catch(e){ return new Set(); }
 }
@@ -517,7 +626,9 @@ function saveFocusIds(){ localStorage.setItem('crmlicorne_focus', JSON.stringify
 const state = {
   prospects: [], view: 'dashboard', search: '', editingId: null, prodPeriod: 'jour', dashPeriod: 'jour', charts: {},
   visibleColumns: new Set(DEFAULT_VISIBLE_COLS), colMenuOpen: false, focusDays: 7, focusIds: loadFocusIds(),
-  currentComments: []
+  currentComments: [],
+  updateFrom: '', updateTo: '', updateExcludeNrp: true, updateSector: '',
+  listSector: '', nrpFrom: '', nrpTo: '', nrpSector: ''
 };
 
 /* ---------------- Utils ---------------- */
@@ -535,6 +646,42 @@ function shortDate(d){ return d.toLocaleDateString('fr-FR',{day:'2-digit',month:
 function daysBetween(a,b){ return Math.round((new Date(b)-new Date(a))/86400000); }
 function appendNote(existing, line){ return (existing && existing.trim()) ? existing.trim() + '\n\n' + line : line; }
 function distinctValues(key){ const set=new Set(); state.prospects.forEach(p=>{ if(p[key]) set.add(p[key]); }); return [...set].sort(); }
+function updateDateISO(p){
+  if(!p || !p.mise_a_jour) return '';
+  const d = new Date(p.mise_a_jour);
+  return Number.isNaN(d.getTime()) ? String(p.mise_a_jour).slice(0,10) : isoDate(d);
+}
+function updateDateTime(p){ return p && p.mise_a_jour ? frDateTime(p.mise_a_jour) : '—'; }
+function isNrpStatus(p){
+  const propriete = String(p?.propriete || '').toLowerCase();
+  if(propriete.includes('nrp')) return true;
+  // Les NRP enregistrés par le bouton 📵 laissent une trace horodatée dans prochain_action.
+  const action = String(p?.prochain_action || '');
+  return /\[Appel NRP\s+/i.test(action) && Number(p?.nbr_relance_nrp || 0) > 0;
+}
+function latestUpdateIsNrp(p){
+  // Dans la structure actuelle, mise_a_jour représente la dernière modification de la fiche.
+  // Si la dernière action connue est un appel NRP, le marqueur [Appel NRP ...] doit être
+  // le dernier événement dans le compte-rendu. Sinon, on retient le statut NRP explicite.
+  if(String(p?.propriete || '').toLowerCase().includes('nrp')) return true;
+  const action = String(p?.prochain_action || '');
+  const matches = [...action.matchAll(/\[Appel NRP\s+([^\]]+)\]/gi)];
+  if(!matches.length || !(Number(p?.nbr_relance_nrp || 0) > 0)) return false;
+  const lastNrpPos = matches[matches.length-1].index;
+  const after = action.slice(lastNrpPos + matches[matches.length-1][0].length).trim();
+  // Si aucun événement plus récent n'est identifiable dans le texte, considérer ce NRP comme dernier.
+  return after === '' || !/\[(?:RDV|Appel NRP)\s+/i.test(after);
+}
+function inUpdateRange(p, from, to){
+  const d = updateDateISO(p);
+  if(!d) return false;
+  if(from && d < from) return false;
+  if(to && d > to) return false;
+  return true;
+}
+function sectorMatches(p, sector){
+  return !sector || String(p.secteur || '') === sector;
+}
 
 function toast(msg, kind){
   const host = $('#toastHost');
@@ -745,7 +892,8 @@ function baseFiltered(){
    ================================================================== */
 const VIEW_TITLES = {
   dashboard:'Tableau de bord', focus:'Focus du jour', urgence:"Matrice d'urgence", list:'Tous les prospects',
-  noncontacte:'Non contactés', friction:'Tri de friction', potentiel:'Potentiel FMFP', settings:'Paramètres'
+  updates:'Mises à jour', nrp:'Dernières mises à jour NRP', noncontacte:'Non contactés',
+  friction:'Tri de friction', potentiel:'Potentiel FMFP', settings:'Paramètres'
 };
 
 function render(){
@@ -756,6 +904,8 @@ function render(){
   else if(state.view === 'focus') view.innerHTML = focusHTML();
   else if(state.view === 'urgence') view.innerHTML = urgenceHTML();
   else if(state.view === 'list') view.innerHTML = listHTML(baseFiltered(), 'Tous les prospects', 'Classés par Potentiel Financier × Chances de Closing');
+  else if(state.view === 'updates') view.innerHTML = updatesHTML();
+  else if(state.view === 'nrp') view.innerHTML = nrpHTML();
   else if(state.view === 'noncontacte') view.innerHTML = noncontacteHTML();
   else if(state.view === 'friction') view.innerHTML = frictionHTML();
   else if(state.view === 'potentiel') view.innerHTML = potentielHTML();
@@ -797,9 +947,82 @@ function tableShell(rows, emptyMsg, showColChooser=true){
 }
 
 function listHTML(rows, title, hint){
+  const sectors = distinctValues('secteur');
+  const filteredRows = rows.filter(p => sectorMatches(p, state.listSector));
   return `
-    <div class="section-title"><h2>${title}</h2><span class="hint">${hint} · ${rows.length} résultat(s)</span></div>
-    ${tableShell(rows, "Aucun prospect ne correspond à votre recherche.")}
+    <div class="section-title"><h2>${title}</h2><span class="hint">${hint} · ${filteredRows.length} résultat(s)</span></div>
+    <div class="toolbar">
+      <label class="chip" style="display:flex;align-items:center;gap:8px;">
+        Secteur :
+        <select id="sectorFilter" style="border:0;background:transparent;color:var(--text);font-weight:600;outline:0;">
+          <option value="">Tous les secteurs</option>
+          ${sectors.map(s=>`<option value="${escapeHtml(s)}" ${state.listSector===s?'selected':''}>${escapeHtml(s)}</option>`).join('')}
+        </select>
+      </label>
+    </div>
+    ${tableShell(filteredRows, "Aucun prospect ne correspond à votre recherche ou à ce secteur.")}
+  `;
+}
+
+function updateFiltersHTML(prefix, from, to, sector, excludeNrp){
+  const sectors = distinctValues('secteur');
+  return `
+    <div class="toolbar" style="align-items:flex-end;">
+      <div class="field" style="margin:0;min-width:150px;">
+        <label>Date de début</label>
+        <input type="date" id="${prefix}From" value="${from}">
+      </div>
+      <div class="field" style="margin:0;min-width:150px;">
+        <label>Date de fin</label>
+        <input type="date" id="${prefix}To" value="${to}">
+      </div>
+      <div class="field" style="margin:0;min-width:190px;">
+        <label>Secteur d'activité</label>
+        <select id="${prefix}Sector">
+          <option value="">Tous les secteurs</option>
+          ${sectors.map(s=>`<option value="${escapeHtml(s)}" ${sector===s?'selected':''}>${escapeHtml(s)}</option>`).join('')}
+        </select>
+      </div>
+      ${prefix==='update' ? `
+      <label class="chip" style="height:38px;display:flex;align-items:center;gap:8px;">
+        <input type="checkbox" id="updateExcludeNrp" ${excludeNrp?'checked':''}>
+        Exclure les NRP
+      </label>` : ''}
+      <button class="btn sm" id="${prefix}ResetBtn" type="button">Réinitialiser</button>
+    </div>`;
+}
+
+function updatesHTML(){
+  const fromLabel = state.updateFrom || 'début';
+  const toLabel = state.updateTo || "aujourd'hui";
+  const rows = state.prospects
+    .filter(p => inUpdateRange(p, state.updateFrom, state.updateTo))
+    .filter(p => !state.updateExcludeNrp || !isNrpStatus(p))
+    .filter(p => sectorMatches(p, state.updateSector))
+    .sort((a,b) => new Date(b.mise_a_jour||0) - new Date(a.mise_a_jour||0));
+  return `
+    <div class="section-title">
+      <h2>Entreprises mises à jour</h2>
+      <span class="hint">${rows.length} résultat(s) · période ${fromLabel} → ${toLabel}</span>
+    </div>
+    ${updateFiltersHTML('update', state.updateFrom, state.updateTo, state.updateSector, state.updateExcludeNrp)}
+    ${tableShell(rows, "Aucune entreprise ne correspond à cette période / ce filtre.")}
+  `;
+}
+
+function nrpHTML(){
+  const rows = state.prospects
+    .filter(p => latestUpdateIsNrp(p))
+    .filter(p => inUpdateRange(p, state.nrpFrom, state.nrpTo))
+    .filter(p => sectorMatches(p, state.nrpSector))
+    .sort((a,b) => new Date(b.mise_a_jour||0) - new Date(a.mise_a_jour||0));
+  return `
+    <div class="section-title">
+      <h2>Dernières mises à jour = NRP</h2>
+      <span class="hint">${rows.length} résultat(s)</span>
+    </div>
+    ${updateFiltersHTML('nrp', state.nrpFrom, state.nrpTo, state.nrpSector, false)}
+    ${rows.length ? tableShell(rows, "Aucune fiche dont la dernière mise à jour est NRP.") : tableShell([], "Aucune fiche dont la dernière mise à jour est NRP.")}
   `;
 }
 
@@ -1299,6 +1522,33 @@ function wireDynamicHandlers(){
   }
   const focusInput = $('#focusDaysInput');
   if(focusInput) focusInput.onchange = (e)=>{ const v = Math.max(1, Number(e.target.value)||1); state.focusDays = v; render(); };
+  const sectorFilter = $('#sectorFilter');
+  if(sectorFilter) sectorFilter.onchange = e => { state.listSector = e.target.value; render(); };
+
+  const updateFrom = $('#updateFrom');
+  const updateTo = $('#updateTo');
+  const updateSector = $('#updateSector');
+  const updateExcludeNrp = $('#updateExcludeNrp');
+  if(updateFrom) updateFrom.onchange = e => { state.updateFrom = e.target.value; render(); };
+  if(updateTo) updateTo.onchange = e => { state.updateTo = e.target.value; render(); };
+  if(updateSector) updateSector.onchange = e => { state.updateSector = e.target.value; render(); };
+  if(updateExcludeNrp) updateExcludeNrp.onchange = e => { state.updateExcludeNrp = e.target.checked; render(); };
+  const updateResetBtn = $('#updateResetBtn');
+  if(updateResetBtn) updateResetBtn.onclick = () => {
+    state.updateFrom = ''; state.updateTo = ''; state.updateSector = ''; state.updateExcludeNrp = true; render();
+  };
+
+  const nrpFrom = $('#nrpFrom');
+  const nrpTo = $('#nrpTo');
+  const nrpSector = $('#nrpSector');
+  if(nrpFrom) nrpFrom.onchange = e => { state.nrpFrom = e.target.value; render(); };
+  if(nrpTo) nrpTo.onchange = e => { state.nrpTo = e.target.value; render(); };
+  if(nrpSector) nrpSector.onchange = e => { state.nrpSector = e.target.value; render(); };
+  const nrpResetBtn = $('#nrpResetBtn');
+  if(nrpResetBtn) nrpResetBtn.onclick = () => {
+    state.nrpFrom = ''; state.nrpTo = ''; state.nrpSector = ''; render();
+  };
+
   const addFocusBtn = $('#addFocusBtn');
   if(addFocusBtn) addFocusBtn.onclick = openFocusPicker;
 }
@@ -1351,17 +1601,82 @@ function applyTheme(t){
   localStorage.setItem('crmlicorne_theme', t);
 }
 
+/* ---------------- Floating particle field ---------------- */
+(function initParticles(){
+  const canvas = document.getElementById('particleCanvas');
+  if(!canvas) return;
+  const ctx = canvas.getContext('2d');
+  let w=0,h=0,dpr=1,particles=[];
+  function resize(){
+    dpr=Math.min(devicePixelRatio||1,2); w=innerWidth; h=innerHeight;
+    canvas.width=w*dpr; canvas.height=h*dpr; canvas.style.width=w+'px'; canvas.style.height=h+'px';
+    ctx.setTransform(dpr,0,0,dpr,0,0);
+    const count=Math.min(170,Math.max(70,Math.floor(w*h/9000)));
+    particles=Array.from({length:count},()=>({
+      x:Math.random()*w,y:Math.random()*h,r:.45+Math.random()*1.5,
+      vx:(Math.random()-.5)*.22,vy:(Math.random()-.5)*.18,
+      a:.18+Math.random()*.6,p:Math.random()*Math.PI*2
+    }));
+  }
+  function draw(t){
+    ctx.clearRect(0,0,w,h);
+    for(const p of particles){
+      p.x+=p.vx;p.y+=p.vy;p.p+=.012;
+      if(p.x<-10)p.x=w+10;if(p.x>w+10)p.x=-10;if(p.y<-10)p.y=h+10;if(p.y>h+10)p.y=-10;
+      const alpha=Math.max(.05,p.a*(.72+.28*Math.sin(p.p)));
+      ctx.beginPath();ctx.arc(p.x,p.y,p.r,0,Math.PI*2);ctx.fillStyle=`rgba(25,220,232,${alpha})`;ctx.fill();
+    }
+    // Fine connecting lines only for close particles, like a technical HUD network.
+    for(let i=0;i<particles.length;i++) for(let j=i+1;j<particles.length;j++){
+      const a=particles[i],b=particles[j],dx=a.x-b.x,dy=a.y-b.y,d=Math.hypot(dx,dy);
+      if(d<105){ctx.strokeStyle=`rgba(19,176,199,${(1-d/105)*.09})`;ctx.lineWidth=.5;ctx.beginPath();ctx.moveTo(a.x,a.y);ctx.lineTo(b.x,b.y);ctx.stroke();}
+    }
+    requestAnimationFrame(draw);
+  }
+  addEventListener('resize',resize,{passive:true}); resize(); requestAnimationFrame(draw);
+})();
+
 /* ---------------- Auth gate ---------------- */
 const APP_PASSWORD = 'Angela#110';
 function showApp(){
   $('#loginScreen').style.display = 'none';
   $('#app').classList.remove('locked');
 }
+function showBoot(){
+  $('#bootOverlay').classList.remove('hidden');
+  $('#bootPercent').textContent = '0';
+  $('#bootRingProgress').style.strokeDashoffset = '615';
+  $('#bootStatus').textContent = 'AUTHENTIFICATION VALIDÉE // CHARGEMENT DES MODULES';
+}
+function runBootSequence(){
+  showBoot();
+  const duration = 2900;
+  const start = performance.now();
+  const statuses = [
+    [12,'CONNEXION AU NOYAU COMMERCIAL'],[28,'CHARGEMENT DES PROSPECTS'],[46,'SYNCHRONISATION DES DONNÉES'],
+    [65,'INITIALISATION DES INDICATEURS'],[82,'CALIBRATION DU PILOTAGE'],[94,'OPTIMISATION DE L’INTERFACE'],[100,'SYSTÈME PRÊT']
+  ];
+  return new Promise(resolve=>{
+    function frame(now){
+      const pct = Math.min(100, Math.round(((now-start)/duration)*100));
+      $('#bootPercent').textContent = pct;
+      $('#bootRingProgress').style.strokeDashoffset = String(615 - (615*pct/100));
+      let msg = statuses[0][1];
+      for(const item of statuses){ if(pct >= item[0]) msg = item[1]; }
+      $('#bootStatus').textContent = msg;
+      if(pct < 100) requestAnimationFrame(frame);
+      else setTimeout(()=>{ $('#bootOverlay').classList.add('hidden'); setTimeout(()=>$('#bootOverlay').style.display='none',500); resolve(); },420);
+    }
+    requestAnimationFrame(frame);
+  });
+}
 function tryLogin(pwd){
   if(pwd === APP_PASSWORD){
     sessionStorage.setItem('crmlicorne_auth', 'ok');
     $('#loginError').textContent = '';
-    showApp();
+    $('#loginScreen').style.display = 'none';
+    $('#app').classList.remove('locked');
+    runBootSequence();
     startApp();
     return true;
   }
