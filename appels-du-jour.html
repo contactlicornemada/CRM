@@ -1,0 +1,434 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<meta name="theme-color" content="#06141f">
+<title>Appels du jour — CRM Licorne</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+:root{
+  --bg:#06141f; --bg2:#0b1f2e; --card:#0f2a3d; --card2:#133450; --line:rgba(120,200,220,.16);
+  --text:#eaf7fb; --muted:#84a7b5; --brand:#19d3c5; --brand2:#0fa3b8; --ink:#032028;
+  --warn:#ffb454; --danger:#ff6b86; --ok:#34d399;
+  --safe-b:env(safe-area-inset-bottom,0px); --safe-t:env(safe-area-inset-top,0px);
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;height:100%;overflow:hidden;background:#030c13;color:var(--text);
+  font-family:'Inter',system-ui,sans-serif;-webkit-font-smoothing:antialiased;overscroll-behavior:none}
+h1,h2,.display{font-family:'Space Grotesk',sans-serif}
+button{font-family:inherit;color:inherit;border:0;background:none;cursor:pointer}
+.hidden{display:none!important}
+
+/* ---------- App shell : plein écran fixe, colonne mobile centrée sur desktop ---------- */
+#app{position:fixed;inset:0;margin:0 auto;width:100%;max-width:520px;height:100dvh;display:flex;flex-direction:column;
+  background:radial-gradient(120% 60% at 50% 0,#0c2a3d 0,var(--bg) 60%);overflow:hidden}
+@media(min-width:560px){#app{box-shadow:0 0 0 1px var(--line),0 30px 80px rgba(0,0,0,.6)}}
+
+header{flex:none;padding:calc(12px + var(--safe-t)) 16px 10px;}
+.head-row{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
+.brand{display:flex;align-items:center;gap:9px;font-family:'Space Grotesk';font-weight:700;font-size:15px;letter-spacing:.02em}
+.dot{width:22px;height:22px;border-radius:7px;background:linear-gradient(135deg,var(--brand),#5b8cff);box-shadow:0 0 14px rgba(25,211,197,.5)}
+#status{font-size:12px;color:var(--muted)}
+
+/* Onglets avec indicateur qui glisse */
+.tabs{position:relative;display:grid;grid-template-columns:1fr 1fr;background:rgba(255,255,255,.05);border:1px solid var(--line);border-radius:14px;padding:4px}
+.tabs::before{content:"";position:absolute;top:4px;bottom:4px;left:4px;width:calc(50% - 4px);border-radius:10px;
+  background:linear-gradient(135deg,var(--brand),var(--brand2));transition:transform .3s cubic-bezier(.3,.8,.3,1);
+  transform:translateX(calc(var(--p,0) * 100%))}
+.tab{position:relative;z-index:1;padding:10px 0;font-size:13.5px;font-weight:600;color:var(--muted);transition:color .2s;display:flex;align-items:center;justify-content:center;gap:7px}
+.tab.on{color:var(--ink)}
+.pill{min-width:20px;height:20px;padding:0 6px;border-radius:10px;background:rgba(255,255,255,.14);font-size:11.5px;display:inline-grid;place-items:center;font-weight:700}
+.tab.on .pill{background:rgba(3,32,40,.22)}
+
+/* ---------- Slider horizontal ---------- */
+#viewport{flex:1;min-height:0;overflow:hidden;touch-action:pan-y;position:relative}
+#track{display:flex;width:200%;height:100%;will-change:transform;transition:transform .32s cubic-bezier(.3,.8,.3,1);
+  transform:translate3d(calc(var(--p,0) * -50%),0,0)}
+#track.drag{transition:none}
+.slide{width:50%;height:100%;display:flex;flex-direction:column;min-height:0}
+.scroll{flex:1;min-height:0;overflow-y:auto;overflow-x:hidden;padding:4px 16px 16px;-webkit-overflow-scrolling:touch;overscroll-behavior:contain}
+.scroll::-webkit-scrollbar{width:0}
+.bar{flex:none;padding:12px 16px calc(12px + var(--safe-b));background:linear-gradient(180deg,rgba(6,20,31,0),var(--bg) 35%);
+  display:flex;gap:10px;align-items:center}
+
+/* ---------- Boutons ---------- */
+.btn{height:54px;border-radius:16px;padding:0 20px;font-size:16px;font-weight:700;display:flex;align-items:center;justify-content:center;gap:8px;
+  background:var(--card);border:1px solid var(--line);transition:transform .1s}
+.btn:active{transform:scale(.97)}
+.btn.primary{background:linear-gradient(135deg,var(--brand),var(--brand2));color:var(--ink);border:0;box-shadow:0 8px 24px -8px rgba(25,211,197,.6)}
+.btn:disabled{opacity:.35;box-shadow:none}
+.btn.icon{width:54px;padding:0;font-size:20px;flex:none}
+.btn.grow{flex:1}
+.chipbtn{height:34px;padding:0 13px;border-radius:17px;background:rgba(255,255,255,.06);border:1px solid var(--line);font-size:12.5px;font-weight:600;white-space:nowrap;color:var(--text)}
+.chipbtn:active{background:rgba(255,255,255,.12)}
+
+/* ---------- Slide 1 : sélection ---------- */
+.search{display:flex;align-items:center;gap:10px;background:rgba(255,255,255,.06);border:1px solid var(--line);border-radius:14px;padding:0 14px;height:48px;margin:6px 0 10px}
+.search input{flex:1;background:none;border:0;outline:0;color:var(--text);font-size:16px;min-width:0}
+.search input::placeholder{color:var(--muted)}
+.chips{display:flex;gap:8px;overflow-x:auto;padding-bottom:10px;margin:0 -16px;padding-left:16px;padding-right:16px;scrollbar-width:none;touch-action:pan-x}
+.chips::-webkit-scrollbar{display:none}
+.chipbtn.on{background:rgba(25,211,197,.18);border-color:var(--brand);color:var(--brand)}
+.list{display:flex;flex-direction:column;gap:8px}
+.item{display:flex;align-items:center;gap:13px;padding:13px 14px;border-radius:16px;background:var(--card);border:1.5px solid transparent;user-select:none;-webkit-user-select:none;transition:background .15s,border-color .15s}
+.item:active{transform:scale(.985)}
+.item.sel{border-color:var(--brand);background:linear-gradient(135deg,rgba(25,211,197,.16),rgba(15,163,184,.08))}
+.chk{width:26px;height:26px;border-radius:9px;border:2px solid rgba(255,255,255,.25);flex:none;display:grid;place-items:center;font-size:15px;font-weight:900;color:var(--ink);transition:.15s}
+.item.sel .chk{background:var(--brand);border-color:var(--brand)}
+.info{flex:1;min-width:0}
+.nm{font-weight:600;font-size:15.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.meta{font-size:12.5px;color:var(--muted);margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tag{font-size:10.5px;font-weight:700;padding:4px 8px;border-radius:8px;background:rgba(255,180,84,.16);color:var(--warn);white-space:nowrap;flex:none}
+.tag.late{background:rgba(255,107,134,.16);color:var(--danger)}
+.empty{text-align:center;color:var(--muted);padding:50px 16px;font-size:14px;line-height:1.6}
+.empty .ico{font-size:42px;margin-bottom:10px}
+.count{flex:1;font-size:13px;color:var(--muted);line-height:1.3}
+.count b{display:block;font-family:'Space Grotesk';font-size:22px;color:var(--text)}
+
+/* ---------- Slide 2 : appel ---------- */
+.callhead{display:flex;align-items:center;justify-content:space-between;margin:6px 0 10px;font-size:13px;color:var(--muted);font-weight:600}
+.prog{height:5px;border-radius:3px;background:rgba(255,255,255,.08);overflow:hidden;margin-bottom:20px}
+.prog i{display:block;height:100%;width:0;background:linear-gradient(90deg,var(--brand),#5b8cff);border-radius:3px;transition:width .35s}
+.who{font-family:'Space Grotesk';font-size:30px;font-weight:700;line-height:1.15;word-break:break-word}
+.who-sub{color:var(--muted);font-size:14px;margin-top:6px}
+.phone{display:flex;align-items:center;justify-content:center;gap:12px;margin:20px 0 14px;min-height:72px;border-radius:20px;text-decoration:none;
+  background:linear-gradient(135deg,var(--brand),var(--brand2));color:var(--ink);font-family:'Space Grotesk';font-size:26px;font-weight:700;
+  box-shadow:0 12px 30px -10px rgba(25,211,197,.65);word-break:break-all;padding:10px 16px;text-align:center}
+.phone:active{transform:scale(.98)}
+.nophone{display:flex;gap:8px;margin:20px 0 14px}
+.nophone input{flex:1;min-width:0;height:56px;border-radius:16px;background:rgba(255,255,255,.06);border:1px solid var(--line);color:var(--text);padding:0 14px;font-size:18px;outline:0}
+.nophone .btn{height:56px}
+.facts{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:6px}
+.fact{background:rgba(255,255,255,.06);border:1px solid var(--line);border-radius:10px;padding:6px 10px;font-size:12.5px;color:var(--muted)}
+.fact b{color:var(--text);font-weight:600}
+.lbl{font-size:11.5px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin:18px 0 8px}
+.hist{font-size:13px;color:var(--muted);white-space:pre-wrap;background:rgba(255,255,255,.04);border-left:3px solid var(--brand2);border-radius:4px 10px 10px 4px;padding:10px 12px;max-height:100px;overflow:auto}
+textarea{width:100%;min-height:140px;border-radius:16px;background:rgba(255,255,255,.06);border:1px solid var(--line);color:var(--text);padding:14px;font-size:16px;font-family:inherit;outline:0;resize:none;line-height:1.45}
+textarea:focus,.nophone input:focus,.search:focus-within{border-color:var(--brand)}
+textarea::placeholder{color:var(--muted)}
+.done{text-align:center;padding:60px 10px}
+.done .ico{font-size:56px}
+.done h2{font-size:26px;margin:12px 0 6px}
+.done p{color:var(--muted);margin:0 0 24px}
+
+/* ---------- Divers ---------- */
+.dots{display:flex;gap:6px;justify-content:center;padding-bottom:2px}
+#toastHost{position:fixed;left:0;right:0;bottom:calc(100px + var(--safe-b));display:flex;flex-direction:column;align-items:center;gap:8px;z-index:50;pointer-events:none}
+.toast{background:#eaf7fb;color:#06141f;padding:11px 18px;border-radius:14px;font-size:13.5px;font-weight:600;box-shadow:0 10px 30px rgba(0,0,0,.4);animation:up .25s}
+.toast.err{background:var(--danger);color:#fff}
+@keyframes up{from{opacity:0;transform:translateY(8px)}}
+
+#login{position:fixed;inset:0;z-index:100;display:flex;align-items:center;justify-content:center;padding:24px;background:radial-gradient(100% 60% at 50% 0,#0c2a3d,#06141f)}
+#login form{width:100%;max-width:340px;text-align:center}
+#login .dot{width:46px;height:46px;border-radius:14px;margin:0 auto 16px}
+#login h1{font-size:24px;margin:0 0 4px}
+#login p{margin:0 0 20px;color:var(--muted);font-size:14px}
+#login input{width:100%;height:56px;border-radius:16px;background:rgba(255,255,255,.06);border:1px solid var(--line);color:var(--text);padding:0 16px;font-size:17px;outline:0;margin-bottom:8px;text-align:center}
+#login input:focus{border-color:var(--brand)}
+#loginErr{min-height:20px;color:var(--danger);font-size:13px;margin-bottom:8px}
+#login .btn{width:100%}
+</style>
+</head>
+<body>
+
+<div id="login">
+  <form id="loginForm">
+    <div class="dot"></div>
+    <h1>Appels du jour</h1>
+    <p>CRM Licorne</p>
+    <input type="password" id="pwd" placeholder="Mot de passe" autocomplete="current-password">
+    <div id="loginErr"></div>
+    <button class="btn primary" type="submit">Se connecter</button>
+  </form>
+</div>
+
+<div id="app" class="hidden">
+  <header>
+    <div class="head-row">
+      <div class="brand"><div class="dot"></div>Appels du jour</div>
+      <span id="status">Chargement…</span>
+    </div>
+    <div class="tabs" id="tabs">
+      <button class="tab on" data-p="0">Sélection <span class="pill" id="pillSel">0</span></button>
+      <button class="tab" data-p="1">Appel <span class="pill" id="pillCall">–</span></button>
+    </div>
+  </header>
+
+  <div id="viewport">
+    <div id="track">
+
+      <!-- ===== SLIDE 1 : sélection ===== -->
+      <section class="slide" id="slide0">
+        <div class="scroll" id="scroll0">
+          <div class="search"><span>🔎</span><input id="q" placeholder="Rechercher un prospect, un contact…" enterkeyhint="search"></div>
+          <div class="chips" id="chips"></div>
+          <div class="list" id="list"></div>
+        </div>
+        <div class="bar">
+          <div class="count"><b id="selCount">0</b>sélectionné(s)</div>
+          <button class="btn icon" id="menuBtn" title="Raccourcis">⋯</button>
+          <button class="btn primary" id="startBtn" disabled>▶ Démarrer appel</button>
+        </div>
+      </section>
+
+      <!-- ===== SLIDE 2 : appel ===== -->
+      <section class="slide" id="slide1">
+        <div class="scroll" id="scroll1"><div id="callBody"></div></div>
+        <div class="bar" id="callBar">
+          <button class="btn icon" id="prevBtn" title="Précédent">←</button>
+          <button class="btn primary grow" id="nextBtn">Prochain appel →</button>
+        </div>
+      </section>
+
+    </div>
+  </div>
+</div>
+<div id="toastHost"></div>
+
+<script>
+const SUPABASE_URL = 'https://efyomnxnzjcqosobqxeo.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_-1SDSkv_CTL29sluc_yKZg_TcmEV2ia';
+const APP_PASSWORD = 'Angela#110';
+const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+const PHONE_KEYS = ['telephone','téléphone','tel','phone','numero','numéro','num_tel','contact_tel','mobile','gsm','telephone_contact'];
+
+const $ = (s,r=document)=>r.querySelector(s);
+const $$ = (s,r=document)=>[...r.querySelectorAll(s)];
+const esc = s => (s==null?'':String(s)).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const iso = d => { const p=n=>String(n).padStart(2,'0'); return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())}`; };
+const todayISO = () => iso(new Date());
+const score = p => (Number(p.potentiel_financier)||0) * (Number(p.chances_closing)||0) / 100;
+const frDate = s => { if(!s) return '—'; const d=new Date(s+'T00:00:00'); return d.toLocaleDateString('fr-FR',{day:'2-digit',month:'short'}); };
+
+const S = { prospects:[], selected:new Set(), queue:[], idx:0, finished:false, q:'', sector:'', page:0 };
+
+function toast(msg, err){
+  const el=document.createElement('div'); el.className='toast'+(err?' err':''); el.textContent=msg;
+  $('#toastHost').appendChild(el); setTimeout(()=>el.remove(),2400);
+}
+function vib(ms=12){ try{ navigator.vibrate && navigator.vibrate(ms); }catch(e){} }
+function loadSel(){ try{ return new Set(JSON.parse(localStorage.getItem('appels_sel')||'[]')); }catch(e){ return new Set(); } }
+function saveSel(){ localStorage.setItem('appels_sel', JSON.stringify([...S.selected])); }
+function manualPhones(){ try{ return JSON.parse(localStorage.getItem('appels_phones')||'{}'); }catch(e){ return {}; } }
+function getPhone(p){
+  for(const k of PHONE_KEYS){ if(p[k] && String(p[k]).trim()) return String(p[k]).trim(); }
+  return manualPhones()[p.id] || '';
+}
+const telHref = n => 'tel:' + n.replace(/[^\d+]/g,'');
+
+/* ================= Navigation entre les 2 slides ================= */
+function setPage(n, animate=true){
+  S.page = n;
+  const root = document.documentElement;
+  root.style.setProperty('--p', n);
+  $$('.tab').forEach((t,i)=>t.classList.toggle('on', i===n));
+  $('#tabs').style.setProperty('--p', n);
+  // l'écran hors-champ ne doit pas être atteignable au clavier
+  $('#slide0').inert = n!==0;
+  $('#slide1').inert = n!==1;
+}
+
+(function swipe(){
+  const vp = $('#viewport'), track = $('#track');
+  let sx=0, sy=0, dx=0, lock=null, down=false, t0=0, moved=false;
+  const skip = el => el.closest('input,textarea,select,.chips');
+  vp.addEventListener('pointerdown', e=>{
+    if(skip(e.target)) return;
+    down=true; lock=null; dx=0; moved=false; sx=e.clientX; sy=e.clientY; t0=Date.now();
+  });
+  vp.addEventListener('pointermove', e=>{
+    if(!down) return;
+    const mx=e.clientX-sx, my=e.clientY-sy;
+    if(lock===null && (Math.abs(mx)>10 || Math.abs(my)>10)){
+      lock = Math.abs(mx) > Math.abs(my)*1.2 ? 'x' : 'y';
+      if(lock==='x'){ track.classList.add('drag'); try{ vp.setPointerCapture(e.pointerId); }catch(_){} }
+    }
+    if(lock!=='x') return;
+    moved=true; dx=mx;
+    if((S.page===0 && dx>0) || (S.page===1 && dx<0)) dx*=.25;  // résistance aux bords
+    track.style.transform = `translate3d(calc(${-S.page*50}% + ${dx}px),0,0)`;
+  });
+  const end = ()=>{
+    if(!down) return; down=false;
+    track.classList.remove('drag'); track.style.transform='';
+    if(lock==='x'){
+      const w = vp.clientWidth, v = Math.abs(dx)/(Date.now()-t0||1);
+      if(Math.abs(dx) > w*.22 || v>.5){
+        if(dx<0 && S.page===0){ setPage(1); vib(); }
+        else if(dx>0 && S.page===1){ setPage(0); vib(); }
+      }
+    }
+    lock=null;
+  };
+  vp.addEventListener('pointerup', end);
+  vp.addEventListener('pointercancel', end);
+  // empêche le "click" fantôme après un glissement
+  vp.addEventListener('click', e=>{ if(moved){ e.stopPropagation(); e.preventDefault(); moved=false; } }, true);
+  document.addEventListener('keydown', e=>{
+    if(e.target.closest('input,textarea,select')) return;
+    if(e.key==='ArrowRight') setPage(0);
+    if(e.key==='ArrowLeft'){ setPage(1); }
+  });
+})();
+
+/* ================= Données ================= */
+async function load(){
+  const { data, error } = await sb.from('prospects').select('*').order('id',{ascending:true});
+  if(error){ $('#status').textContent='Hors ligne'; toast('Erreur : '+error.message,true); return; }
+  S.prospects = data||[];
+  $('#status').textContent = S.prospects.length+' prospects';
+  const ids = new Set(S.prospects.map(p=>p.id));
+  S.selected = new Set([...loadSel()].filter(id=>ids.has(id)));
+  renderChips(); renderList(); renderCall();
+}
+
+/* ================= Slide 1 ================= */
+function renderChips(){
+  const sectors = [...new Set(S.prospects.map(p=>p.secteur).filter(Boolean))].sort();
+  $('#chips').innerHTML = `<button class="chipbtn ${S.sector===''?'on':''}" data-s="">Tous</button>` +
+    sectors.map(s=>`<button class="chipbtn ${S.sector===s?'on':''}" data-s="${esc(s)}">${esc(s)}</button>`).join('');
+}
+function filtered(){
+  const t = S.q.toLowerCase();
+  return S.prospects.filter(p=>{
+    if(S.sector && p.secteur!==S.sector) return false;
+    if(!t) return true;
+    return [p.nom,p.contact_resp,p.secteur,p.email].map(x=>(x||'').toLowerCase()).join(' ').includes(t);
+  }).sort((a,b)=>score(b)-score(a));
+}
+function renderList(){
+  const rows = filtered(), today = todayISO();
+  $('#list').innerHTML = rows.length ? rows.map(p=>{
+    const sel = S.selected.has(p.id), ph = getPhone(p);
+    let tag = '';
+    if(p.date_relance){
+      if(p.date_relance < today) tag = '<span class="tag late">En retard</span>';
+      else if(p.date_relance === today) tag = '<span class="tag">Aujourd\'hui</span>';
+    }
+    return `<div class="item ${sel?'sel':''}" data-id="${p.id}">
+      <div class="chk">${sel?'✓':''}</div>
+      <div class="info"><div class="nm">${esc(p.nom)}</div>
+      <div class="meta">${esc(p.contact_resp||'—')}${ph?' · '+esc(ph):''}</div></div>${tag}</div>`;
+  }).join('') : '<div class="empty"><div class="ico">🗂️</div>Aucun prospect trouvé.</div>';
+  const n = S.selected.size;
+  $('#selCount').textContent = n;
+  $('#pillSel').textContent = n;
+  $('#startBtn').disabled = n===0;
+}
+function toggle(id){ S.selected.has(id)?S.selected.delete(id):S.selected.add(id); saveSel(); vib(8); renderList(); }
+
+function openMenu(){
+  // petit menu de raccourcis via boîte native pour rester léger
+  const c = prompt("Raccourcis :\n1 = Relances du jour\n2 = Tout sélectionner (liste affichée)\n3 = Tout désélectionner","1");
+  const today=todayISO();
+  if(c==='1'){ let n=0; S.prospects.forEach(p=>{ if(p.date_relance && p.date_relance<=today){ S.selected.add(p.id); n++; } }); toast(n+' relance(s) sélectionnée(s)'); }
+  else if(c==='2'){ filtered().forEach(p=>S.selected.add(p.id)); }
+  else if(c==='3'){ S.selected.clear(); }
+  else return;
+  saveSel(); renderList();
+}
+
+/* ================= Slide 2 ================= */
+function startCalls(){
+  S.queue = S.prospects.filter(p=>S.selected.has(p.id)).sort((a,b)=>score(b)-score(a));
+  S.idx = 0; S.finished = false;
+  if(!S.queue.length) return;
+  renderCall();
+  setPage(1);
+  $('#scroll1').scrollTop = 0;
+}
+function renderCall(){
+  const total = S.queue.length;
+  const bar = $('#callBar');
+  if(!total){
+    $('#pillCall').textContent = '–';
+    bar.classList.add('hidden');
+    $('#callBody').innerHTML = `<div class="empty"><div class="ico">📞</div>Aucun appel en cours.<br>Sélectionnez des prospects puis appuyez sur <b>Démarrer appel</b>.</div>`;
+    return;
+  }
+  if(S.finished || S.idx >= total){
+    $('#pillCall').textContent = '✓';
+    bar.classList.add('hidden');
+    $('#callBody').innerHTML = `<div class="done"><div class="ico">✅</div><h2>Session terminée</h2>
+      <p>${total} appel(s) traité(s).</p><button class="btn primary" id="backBtn" style="width:100%">Retour à la sélection</button></div>`;
+    $('#backBtn').onclick = ()=> setPage(0);
+    return;
+  }
+  bar.classList.remove('hidden');
+  const p = S.queue[S.idx], ph = getPhone(p), last = (p.prochain_action||'').trim();
+  $('#pillCall').textContent = (S.idx+1)+'/'+total;
+  $('#prevBtn').disabled = S.idx===0;
+  $('#nextBtn').textContent = S.idx===total-1 ? 'Terminer ✓' : 'Prochain appel →';
+  $('#callBody').innerHTML = `
+    <div class="callhead"><span>Appel ${S.idx+1} sur ${total}</span><span>${esc(p.secteur||'')}</span></div>
+    <div class="prog"><i style="width:${S.idx/total*100}%"></i></div>
+    <div class="who">${esc(p.nom)}</div>
+    <div class="who-sub">${esc(p.contact_resp||'Contact non renseigné')}</div>
+    ${ph
+      ? `<a class="phone" href="${telHref(ph)}">📞 ${esc(ph)}</a>`
+      : `<div class="nophone"><input id="manualPhone" type="tel" inputmode="tel" placeholder="Saisir le numéro"><button class="btn" id="savePhoneBtn">OK</button></div>`}
+    <div class="facts">
+      ${p.propriete?`<span class="fact">Statut <b>${esc(p.propriete)}</b></span>`:''}
+      ${p.dernier_contact?`<span class="fact">Dernier contact <b>${frDate(p.dernier_contact)}</b></span>`:''}
+      ${p.date_relance?`<span class="fact">Relance <b>${frDate(p.date_relance)}</b></span>`:''}
+    </div>
+    ${last?`<div class="lbl">Dernières notes</div><div class="hist">${esc(last.length>300?'…'+last.slice(-300):last)}</div>`:''}
+    <div class="lbl">Commentaire</div>
+    <textarea id="comment" placeholder="Compte-rendu de l'appel…"></textarea>`;
+  const sp = $('#savePhoneBtn');
+  if(sp) sp.onclick = ()=>{
+    const v = $('#manualPhone').value.trim(); if(!v) return;
+    const m = manualPhones(); m[p.id]=v; localStorage.setItem('appels_phones', JSON.stringify(m));
+    renderCall(); renderList();
+  };
+}
+async function nextCall(){
+  const p = S.queue[S.idx];
+  const text = ($('#comment')||{}).value ? $('#comment').value.trim() : '';
+  const btn = $('#nextBtn'); btn.disabled = true;
+  if(text){
+    const { error } = await sb.from('prospect_comments').insert({ prospect_id:p.id, commentaire:text });
+    if(error){ toast("Commentaire non enregistré : "+error.message, true); btn.disabled=false; return; }
+    const { error:e2 } = await sb.from('prospects').update({ dernier_contact: todayISO(), mise_a_jour: new Date().toISOString() }).eq('id', p.id);
+    if(!e2) p.dernier_contact = todayISO();
+    toast('Commentaire enregistré ✓');
+  }
+  btn.disabled = false; vib();
+  S.idx++;
+  if(S.idx >= S.queue.length) S.finished = true;
+  renderCall();
+  $('#scroll1').scrollTop = 0;
+}
+function prevCall(){
+  if(S.idx>0){ S.idx--; S.finished=false; renderCall(); $('#scroll1').scrollTop=0; }
+}
+
+/* ================= Init ================= */
+function init(){
+  $('#login').classList.add('hidden');
+  $('#app').classList.remove('hidden');
+  setPage(0);
+  $$('.tab').forEach(t=> t.onclick = ()=> setPage(Number(t.dataset.p)));
+  $('#list').addEventListener('click', e=>{ const it=e.target.closest('.item'); if(it) toggle(Number(it.dataset.id)); });
+  $('#chips').addEventListener('click', e=>{ const b=e.target.closest('.chipbtn'); if(!b) return; S.sector=b.dataset.s; renderChips(); renderList(); });
+  let t; $('#q').addEventListener('input', e=>{ clearTimeout(t); t=setTimeout(()=>{ S.q=e.target.value; renderList(); },150); });
+  $('#startBtn').onclick = startCalls;
+  $('#menuBtn').onclick = openMenu;
+  $('#nextBtn').onclick = nextCall;
+  $('#prevBtn').onclick = prevCall;
+  renderCall();
+  load();
+}
+$('#loginForm').onsubmit = e=>{
+  e.preventDefault();
+  if($('#pwd').value === APP_PASSWORD){ sessionStorage.setItem('appels_auth','ok'); init(); }
+  else { $('#loginErr').textContent='Mot de passe incorrect.'; $('#pwd').value=''; }
+};
+if(sessionStorage.getItem('appels_auth')==='ok' || sessionStorage.getItem('crmlicorne_auth')==='ok') init();
+</script>
+</body>
+</html>
