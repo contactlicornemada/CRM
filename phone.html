@@ -95,6 +95,11 @@ header{flex:none;padding:calc(12px + var(--safe-t)) 16px 10px;}
 .prog i{display:block;height:100%;width:0;background:linear-gradient(90deg,var(--brand),#5b8cff);border-radius:3px;transition:width .35s}
 .who{font-family:'Space Grotesk';font-size:30px;font-weight:700;line-height:1.15;word-break:break-word}
 .who-sub{color:var(--muted);font-size:14px;margin-top:6px}
+.company{margin-top:8px;font-size:16px;font-weight:600;color:var(--brand)}
+.lastc{margin-top:14px;background:rgba(255,255,255,.05);border:1px solid var(--line);border-left:3px solid var(--brand2);border-radius:6px 14px 14px 6px;padding:11px 13px}
+.lastc-h{display:flex;justify-content:space-between;gap:8px;font-size:10.5px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin-bottom:6px}
+.lastc-b{font-size:14px;line-height:1.45;white-space:pre-wrap;max-height:120px;overflow:auto;word-break:break-word}
+.lastc-b.none{color:var(--muted);font-style:italic}
 .phone{display:flex;align-items:center;justify-content:center;gap:12px;margin:20px 0 14px;min-height:72px;border-radius:20px;text-decoration:none;
   background:linear-gradient(135deg,var(--brand),var(--brand2));color:var(--ink);font-family:'Space Grotesk';font-size:26px;font-weight:700;
   box-shadow:0 12px 30px -10px rgba(25,211,197,.65);word-break:break-all;padding:10px 16px;text-align:center}
@@ -202,9 +207,27 @@ const esc = s => (s==null?'':String(s)).replace(/[&<>"']/g,c=>({'&':'&amp;','<':
 const iso = d => { const p=n=>String(n).padStart(2,'0'); return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())}`; };
 const todayISO = () => iso(new Date());
 const score = p => (Number(p.potentiel_financier)||0) * (Number(p.chances_closing)||0) / 100;
+const frDateTime = s => new Date(s).toLocaleDateString('fr-FR',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'});
 const frDate = s => { if(!s) return '—'; const d=new Date(s+'T00:00:00'); return d.toLocaleDateString('fr-FR',{day:'2-digit',month:'short'}); };
 
-const S = { prospects:[], selected:new Set(), queue:[], idx:0, finished:false, q:'', sector:'', page:0 };
+const S = { prospects:[], selected:new Set(), queue:[], idx:0, finished:false, q:'', sector:'', page:0, lastComments:{} };
+
+// Dernier commentaire de chaque prospect de la file (table prospect_comments)
+async function fetchLastComments(ids){
+  S.lastComments = {};
+  if(!ids.length) return;
+  const { data, error } = await sb.from('prospect_comments').select('prospect_id,commentaire,created_at')
+    .in('prospect_id', ids).order('created_at',{ascending:false});
+  if(error){ console.error(error); return; }
+  (data||[]).forEach(c=>{ if(!S.lastComments[c.prospect_id]) S.lastComments[c.prospect_id] = c; });
+}
+function lastCommentOf(p){
+  const c = S.lastComments[p.id];
+  if(c && c.commentaire) return { text:c.commentaire, date:c.created_at };
+  const n = (p.prochain_action||'').trim();           // à défaut : notes globales de la fiche
+  if(n){ const parts = n.split(/\n\s*\n/); return { text:parts[parts.length-1].trim(), date:null }; }
+  return null;
+}
 
 function toast(msg, err){
   const el=document.createElement('div'); el.className='toast'+(err?' err':''); el.textContent=msg;
@@ -333,10 +356,13 @@ function openMenu(){
 }
 
 /* ================= Slide 2 ================= */
-function startCalls(){
+async function startCalls(){
   S.queue = S.prospects.filter(p=>S.selected.has(p.id)).sort((a,b)=>score(b)-score(a));
   S.idx = 0; S.finished = false;
   if(!S.queue.length) return;
+  $('#startBtn').disabled = true;
+  await fetchLastComments(S.queue.map(p=>p.id));
+  $('#startBtn').disabled = S.selected.size===0;
   renderCall();
   setPage(1);
   $('#scroll1').scrollTop = 0;
@@ -359,25 +385,29 @@ function renderCall(){
     return;
   }
   bar.classList.remove('hidden');
-  const p = S.queue[S.idx], ph = getPhone(p), last = (p.prochain_action||'').trim();
+  const p = S.queue[S.idx], ph = getPhone(p), last = lastCommentOf(p);
+  const person = (p.contact_resp||'').trim();
   $('#pillCall').textContent = (S.idx+1)+'/'+total;
   $('#prevBtn').disabled = S.idx===0;
   $('#nextBtn').textContent = S.idx===total-1 ? 'Terminer ✓' : 'Prochain appel →';
   $('#callBody').innerHTML = `
     <div class="callhead"><span>Appel ${S.idx+1} sur ${total}</span><span>${esc(p.secteur||'')}</span></div>
     <div class="prog"><i style="width:${S.idx/total*100}%"></i></div>
-    <div class="who">${esc(p.nom)}</div>
-    <div class="who-sub">${esc(p.contact_resp||'Contact non renseigné')}</div>
+    <div class="who">${esc(person || p.nom)}</div>
+    ${person ? `<div class="company">🏢 ${esc(p.nom)}</div>` : ''}
+    <div class="lastc">
+      <div class="lastc-h"><span>Dernier commentaire</span>${last&&last.date?`<span>${frDateTime(last.date)}</span>`:''}</div>
+      <div class="lastc-b ${last?'':'none'}">${last ? esc(last.text.length>400 ? last.text.slice(0,400)+'…' : last.text) : 'Aucun commentaire pour le moment.'}</div>
+    </div>
     ${ph
-      ? `<a class="phone" href="${telHref(ph)}">📞 ${esc(ph)}</a>`
+      ? `<a class="phone" href="${telHref(ph)}">📞 Call</a>`
       : `<div class="nophone"><input id="manualPhone" type="tel" inputmode="tel" placeholder="Saisir le numéro"><button class="btn" id="savePhoneBtn">OK</button></div>`}
     <div class="facts">
       ${p.propriete?`<span class="fact">Statut <b>${esc(p.propriete)}</b></span>`:''}
       ${p.dernier_contact?`<span class="fact">Dernier contact <b>${frDate(p.dernier_contact)}</b></span>`:''}
       ${p.date_relance?`<span class="fact">Relance <b>${frDate(p.date_relance)}</b></span>`:''}
     </div>
-    ${last?`<div class="lbl">Dernières notes</div><div class="hist">${esc(last.length>300?'…'+last.slice(-300):last)}</div>`:''}
-    <div class="lbl">Commentaire</div>
+    <div class="lbl">Nouveau commentaire</div>
     <textarea id="comment" placeholder="Compte-rendu de l'appel…"></textarea>`;
   const sp = $('#savePhoneBtn');
   if(sp) sp.onclick = ()=>{
@@ -395,6 +425,7 @@ async function nextCall(){
     if(error){ toast("Commentaire non enregistré : "+error.message, true); btn.disabled=false; return; }
     const { error:e2 } = await sb.from('prospects').update({ dernier_contact: todayISO(), mise_a_jour: new Date().toISOString() }).eq('id', p.id);
     if(!e2) p.dernier_contact = todayISO();
+    S.lastComments[p.id] = { prospect_id:p.id, commentaire:text, created_at:new Date().toISOString() };
     toast('Commentaire enregistré ✓');
   }
   btn.disabled = false; vib();
