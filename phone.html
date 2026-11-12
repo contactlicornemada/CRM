@@ -100,6 +100,11 @@ header{flex:none;padding:calc(12px + var(--safe-t)) 16px 10px;}
 .lastc{margin-top:14px;background:rgba(255,255,255,.05);border:1px solid var(--line);border-left:3px solid var(--brand2);border-radius:6px 14px 14px 6px;padding:11px 13px}
 .lastc-h{display:flex;justify-content:space-between;gap:8px;font-size:10.5px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin-bottom:6px}
 .lastc-b{font-size:14px;line-height:1.45;white-space:pre-wrap;max-height:120px;overflow:auto;word-break:break-word}
+.note{padding:9px 0;border-top:1px solid var(--line)}
+.note:first-of-type{border-top:0;padding-top:0}
+.note:last-child{padding-bottom:0}
+.note-d{font-size:11px;color:var(--brand);font-weight:600;margin-bottom:3px}
+.note-b{font-size:14px;line-height:1.45;white-space:pre-wrap;word-break:break-word}
 .lastc-b.none{color:var(--muted);font-style:italic}
 .phone{display:flex;align-items:center;justify-content:center;gap:12px;margin:20px 0 14px;min-height:72px;border-radius:20px;text-decoration:none;
   background:linear-gradient(135deg,var(--brand),var(--brand2));color:var(--ink);font-family:'Space Grotesk';font-size:26px;font-weight:700;
@@ -220,21 +225,27 @@ async function fetchLastComments(ids){
   const { data, error } = await sb.from('prospect_comments').select('prospect_id,commentaire,created_at')
     .in('prospect_id', ids).order('created_at',{ascending:false});
   if(error){ console.error(error); return; }
-  (data||[]).forEach(c=>{ if(!S.lastComments[c.prospect_id]) S.lastComments[c.prospect_id] = c; });
+  (data||[]).forEach(c=>{
+    const arr = S.lastComments[c.prospect_id] || (S.lastComments[c.prospect_id] = []);
+    if(arr.length < 3) arr.push(c);          // on garde les 3 plus récentes
+  });
+}
+function lastNotesOf(p){
+  const arr = S.lastComments[p.id];
+  if(arr && arr.length) return arr.map(c=>({ text:c.commentaire, date:c.created_at }));
+  const n = (p.prochain_action||'').trim();           // à défaut : notes globales de la fiche
+  if(n) return n.split(/\n\s*\n/).filter(Boolean).slice(-3).reverse().map(t=>({ text:t.trim(), date:null }));
+  return [];
 }
 function lastBoxHTML(p){
-  const last = lastCommentOf(p);
+  const notes = lastNotesOf(p);
   return `<div class="lastc">
-    <div class="lastc-h"><span>Dernier commentaire</span>${last&&last.date?`<span>${frDateTime(last.date)}</span>`:''}</div>
-    <div class="lastc-b ${last?'':'none'}">${last ? esc(last.text.length>400 ? last.text.slice(0,400)+'…' : last.text) : 'Aucun commentaire pour le moment.'}</div>
+    <div class="lastc-h"><span>${notes.length>1?'3 dernières notes':'Dernière note'}</span></div>
+    ${notes.length ? notes.map(n=>`<div class="note">
+      ${n.date?`<div class="note-d">${frDateTime(n.date)}</div>`:''}
+      <div class="note-b">${esc(n.text.length>400 ? n.text.slice(0,400)+'…' : n.text)}</div></div>`).join('')
+      : '<div class="lastc-b none">Aucune note pour le moment.</div>'}
   </div>`;
-}
-function lastCommentOf(p){
-  const c = S.lastComments[p.id];
-  if(c && c.commentaire) return { text:c.commentaire, date:c.created_at };
-  const n = (p.prochain_action||'').trim();           // à défaut : notes globales de la fiche
-  if(n){ const parts = n.split(/\n\s*\n/); return { text:parts[parts.length-1].trim(), date:null }; }
-  return null;
 }
 
 function toast(msg, err){
@@ -429,7 +440,9 @@ async function saveNote(p, text){
   if(error){ toast("Note non enregistrée : "+error.message, true); return false; }
   const { error:e2 } = await sb.from('prospects').update({ dernier_contact: todayISO(), mise_a_jour: new Date().toISOString() }).eq('id', p.id);
   if(!e2) p.dernier_contact = todayISO();
-  S.lastComments[p.id] = { prospect_id:p.id, commentaire:text, created_at:new Date().toISOString() };
+  const arr = S.lastComments[p.id] || (S.lastComments[p.id] = []);
+  arr.unshift({ prospect_id:p.id, commentaire:text, created_at:new Date().toISOString() });
+  if(arr.length > 3) arr.length = 3;
   return true;
 }
 async function submitNote(){
