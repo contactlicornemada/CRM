@@ -61,6 +61,7 @@ header{flex:none;padding:calc(12px + var(--safe-t)) 16px 10px;}
 .btn:active{transform:scale(.97)}
 .btn.primary{background:linear-gradient(135deg,var(--brand),var(--brand2));color:var(--ink);border:0;box-shadow:0 8px 24px -8px rgba(25,211,197,.6)}
 .btn:disabled{opacity:.35;box-shadow:none}
+.btn.submit{width:100%;height:50px;margin-top:10px;font-size:15px;background:rgba(25,211,197,.14);border:1.5px solid var(--brand);color:var(--brand)}
 .btn.icon{width:54px;padding:0;font-size:20px;flex:none}
 .btn.grow{flex:1}
 .chipbtn{height:34px;padding:0 13px;border-radius:17px;background:rgba(255,255,255,.06);border:1px solid var(--line);font-size:12.5px;font-weight:600;white-space:nowrap;color:var(--text)}
@@ -220,6 +221,13 @@ async function fetchLastComments(ids){
     .in('prospect_id', ids).order('created_at',{ascending:false});
   if(error){ console.error(error); return; }
   (data||[]).forEach(c=>{ if(!S.lastComments[c.prospect_id]) S.lastComments[c.prospect_id] = c; });
+}
+function lastBoxHTML(p){
+  const last = lastCommentOf(p);
+  return `<div class="lastc">
+    <div class="lastc-h"><span>Dernier commentaire</span>${last&&last.date?`<span>${frDateTime(last.date)}</span>`:''}</div>
+    <div class="lastc-b ${last?'':'none'}">${last ? esc(last.text.length>400 ? last.text.slice(0,400)+'…' : last.text) : 'Aucun commentaire pour le moment.'}</div>
+  </div>`;
 }
 function lastCommentOf(p){
   const c = S.lastComments[p.id];
@@ -395,10 +403,7 @@ function renderCall(){
     <div class="prog"><i style="width:${S.idx/total*100}%"></i></div>
     <div class="who">${esc(person || p.nom)}</div>
     ${person ? `<div class="company">🏢 ${esc(p.nom)}</div>` : ''}
-    <div class="lastc">
-      <div class="lastc-h"><span>Dernier commentaire</span>${last&&last.date?`<span>${frDateTime(last.date)}</span>`:''}</div>
-      <div class="lastc-b ${last?'':'none'}">${last ? esc(last.text.length>400 ? last.text.slice(0,400)+'…' : last.text) : 'Aucun commentaire pour le moment.'}</div>
-    </div>
+    <div id="lastcBox">${lastBoxHTML(p)}</div>
     ${ph
       ? `<a class="phone" href="${telHref(ph)}">📞 Call</a>`
       : `<div class="nophone"><input id="manualPhone" type="tel" inputmode="tel" placeholder="Saisir le numéro"><button class="btn" id="savePhoneBtn">OK</button></div>`}
@@ -407,8 +412,10 @@ function renderCall(){
       ${p.dernier_contact?`<span class="fact">Dernier contact <b>${frDate(p.dernier_contact)}</b></span>`:''}
       ${p.date_relance?`<span class="fact">Relance <b>${frDate(p.date_relance)}</b></span>`:''}
     </div>
-    <div class="lbl">Nouveau commentaire</div>
-    <textarea id="comment" placeholder="Compte-rendu de l'appel…"></textarea>`;
+    <div class="lbl">Ajouter une nouvelle note</div>
+    <textarea id="comment" placeholder="Écrire une note sur cet appel…"></textarea>
+    <button class="btn submit" id="addNoteBtn" type="button">Envoyer la note</button>`;
+  $('#addNoteBtn').onclick = submitNote;
   const sp = $('#savePhoneBtn');
   if(sp) sp.onclick = ()=>{
     const v = $('#manualPhone').value.trim(); if(!v) return;
@@ -416,17 +423,35 @@ function renderCall(){
     renderCall(); renderList();
   };
 }
+// Enregistre une nouvelle note (table prospect_comments) + met à jour la fiche
+async function saveNote(p, text){
+  const { error } = await sb.from('prospect_comments').insert({ prospect_id:p.id, commentaire:text });
+  if(error){ toast("Note non enregistrée : "+error.message, true); return false; }
+  const { error:e2 } = await sb.from('prospects').update({ dernier_contact: todayISO(), mise_a_jour: new Date().toISOString() }).eq('id', p.id);
+  if(!e2) p.dernier_contact = todayISO();
+  S.lastComments[p.id] = { prospect_id:p.id, commentaire:text, created_at:new Date().toISOString() };
+  return true;
+}
+async function submitNote(){
+  const p = S.queue[S.idx], ta = $('#comment'), btn = $('#addNoteBtn');
+  const text = ta.value.trim();
+  if(!text){ toast('Écrivez une note avant de l\'envoyer', true); ta.focus(); return; }
+  btn.disabled = true;
+  const ok = await saveNote(p, text);
+  btn.disabled = false;
+  if(!ok) return;
+  ta.value = ''; vib();
+  $('#lastcBox').innerHTML = lastBoxHTML(p);
+  toast('Note ajoutée ✓');
+}
 async function nextCall(){
   const p = S.queue[S.idx];
   const text = ($('#comment')||{}).value ? $('#comment').value.trim() : '';
   const btn = $('#nextBtn'); btn.disabled = true;
-  if(text){
-    const { error } = await sb.from('prospect_comments').insert({ prospect_id:p.id, commentaire:text });
-    if(error){ toast("Commentaire non enregistré : "+error.message, true); btn.disabled=false; return; }
-    const { error:e2 } = await sb.from('prospects').update({ dernier_contact: todayISO(), mise_a_jour: new Date().toISOString() }).eq('id', p.id);
-    if(!e2) p.dernier_contact = todayISO();
-    S.lastComments[p.id] = { prospect_id:p.id, commentaire:text, created_at:new Date().toISOString() };
-    toast('Commentaire enregistré ✓');
+  if(text){   // note rédigée mais non envoyée : on la sauvegarde pour ne rien perdre
+    const ok = await saveNote(p, text);
+    if(!ok){ btn.disabled=false; return; }
+    toast('Note ajoutée ✓');
   }
   btn.disabled = false; vib();
   S.idx++;
