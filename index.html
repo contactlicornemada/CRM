@@ -499,6 +499,39 @@ tbody tr:hover td.sticky-col{background:rgba(15,45,80,.98)}
  .mission-kicker{font-size:9px}
 }
 
+
+/* ===== Dashboard façon cockpit (référence) ===== */
+.dash-trio{grid-template-columns:1.5fr 1.1fr 1fr;}
+@media(max-width:1100px){.dash-trio{grid-template-columns:1fr;}}
+.pipe-row{display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
+.stage{flex:1;min-width:92px;border-radius:12px;padding:10px 8px;text-align:center;color:#fff;border:1px solid rgba(255,255,255,.18);}
+.stage.blue{background:linear-gradient(180deg,#1b7be0,#124f9c)}
+.stage.gold{background:linear-gradient(180deg,#c7961f,#8d6711)}
+.stage.purple{background:linear-gradient(180deg,#8a3fd6,#5b2899)}
+.stage.green{background:linear-gradient(180deg,#1fb561,#0f7a3e)}
+.stage-name{font-size:12px;font-weight:700}
+.stage-num{font:700 22px 'Space Grotesk',sans-serif;margin:2px 0}
+.stage-ic{font-size:30px;line-height:1.2}
+.stage-pct{margin-top:6px;font-weight:700;font-size:13px;background:rgba(0,0,0,.28);border-radius:8px;padding:3px 0}
+.stage-arrow{color:#cfe6ff;font-size:18px}
+.act-row{display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid rgba(71,123,185,.18);font-size:13px}
+.act-row:last-child{border-bottom:0}
+.act-av{font-size:22px}
+.act-txt{flex:1;min-width:0}
+.act-dot{width:8px;height:8px;border-radius:50%}
+.alert-row{display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid rgba(71,123,185,.18);font-size:13px}
+.al-ic{width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:800;color:#fff;flex:none}
+.al-ic.red{background:#e0384f}.al-ic.yellow{background:#e8a321}.al-ic.blue{background:#2b84e6}
+.alert-btn{width:100%;justify-content:center;margin-top:12px;background:linear-gradient(110deg,#e0384f,#b5233a)!important;border-color:#ff667c!important;color:#fff!important}
+.top-row{display:flex;align-items:center;gap:10px;padding:9px 0;font-size:13px}
+.top-rank{width:16px;font-weight:700;color:var(--muted)}
+.top-name{width:34%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:600}
+.top-bar{flex:1;height:7px;border-radius:9px;background:rgba(60,130,220,.18);overflow:hidden}
+.top-bar i{display:block;height:100%;background:#2b84e6;border-radius:9px}
+.promo-card{display:flex;flex-direction:column;justify-content:center;align-items:flex-start;gap:10px;background:linear-gradient(135deg,rgba(14,50,100,.95),rgba(8,24,55,.95))}
+.promo-title{font:700 22px 'Space Grotesk',sans-serif;color:#fff}
+.promo-txt{color:#6fb4ff;font-weight:600;font-size:15px;line-height:1.4}
+.kpi-value{font-size:30px}
 </style>
 </head>
 <body>
@@ -506,8 +539,8 @@ tbody tr:hover td.sticky-col{background:rgba(15,45,80,.98)}
 <div id="loginScreen">
   <div class="login-card">
     <div class="brand"><div class="brand-mark"></div>CRM Licorne</div>
-    <h2>Accès sécurisé</h2>
-    <p class="sub-login">Entrez le mot de passe pour accéder au CRM.</p>
+    <h2>Accès au vaisseau</h2>
+    <p class="sub-login">Équipage autorisé uniquement. Entre le code d’accès, Angela.</p>
     <form id="loginForm">
       <div class="field"><label>Mot de passe</label><input type="password" id="loginPassword" autocomplete="current-password" placeholder="••••••••"></div>
       <div class="login-error" id="loginError"></div>
@@ -520,19 +553,19 @@ tbody tr:hover td.sticky-col{background:rgba(15,45,80,.98)}
   <aside id="sidebar">
     <div class="brand"><div class="brand-mark"></div>CRM Licorne<button class="iconbtn sidebar-close" id="sidebarCloseBtn" title="Fermer">✕</button></div>
     <nav id="mainNav">
-      <div class="navlabel">Pilotage</div>
-      <button class="navitem" data-view="dashboard"><span class="ic">◆</span>Tableau de bord</button>
-      <button class="navitem" data-view="focus"><span class="ic">◈</span>Mission du jour</button>
-      <button class="navitem" data-view="urgence"><span class="ic">⏰</span>Radar des relances</button>
-      <div class="navlabel">Prospects</div>
-      <button class="navitem" data-view="list"><span class="ic">≡</span>Équipage prospects</button>
-      <button class="navitem" data-view="updates"><span class="ic">↻</span>Mises à jour</button>
-      <button class="navitem" data-view="nrp"><span class="ic">📵</span>Dernières mises à jour NRP</button>
-      <button class="navitem" data-view="noncontacte"><span class="ic">⏱</span>Non contactés</button>
-      <button class="navitem" data-view="friction"><span class="ic">⟳</span>Détection des blocages</button>
-      <button class="navitem" data-view="potentiel"><span class="ic">✦</span>Réservoir FMFP</button>
-      <div class="navlabel">Système</div>
-      <button class="navitem" data-view="settings"><span class="ic">⚙</span>Paramètres</button>
+      <div class="navlabel">Poste de commande</div>
+      <button class="navitem" data-view="dashboard"><span class="ic">🏠</span>Cockpit</button>
+      <button class="navitem" data-view="focus"><span class="ic">🎯</span>Mission du jour</button>
+      <button class="navitem" data-view="urgence"><span class="ic">🚨</span>Réunion d’urgence</button>
+      <div class="navlabel">Équipage</div>
+      <button class="navitem" data-view="list"><span class="ic">👥</span>Équipage prospects</button>
+      <button class="navitem" data-view="updates"><span class="ic">🛠️</span>Tâches accomplies</button>
+      <button class="navitem" data-view="nrp"><span class="ic">📵</span>Crewmates muets (NRP)</button>
+      <button class="navitem" data-view="noncontacte"><span class="ic">🛰️</span>Portés disparus</button>
+      <button class="navitem" data-view="friction"><span class="ic">🕵️</span>Chasse aux imposteurs</button>
+      <button class="navitem" data-view="potentiel"><span class="ic">⛽</span>Réservoir FMFP</button>
+      <div class="navlabel">Vaisseau</div>
+      <button class="navitem" data-view="settings"><span class="ic">⚙️</span>Salle des moteurs</button>
     </nav>
     <div class="sidebar-foot">
       <div><span id="connDot"></span><span id="connLabel">Connexion…</span></div>
@@ -544,11 +577,11 @@ tbody tr:hover td.sticky-col{background:rgba(15,45,80,.98)}
   <div id="main">
     <div id="topbar">
       <button class="iconbtn" id="hamburgerBtn" title="Menu">☰</button>
-      <h1 id="viewTitle">Tableau de bord</h1>
+      <h1 id="viewTitle">Cockpit</h1>
       <div class="searchbox"><span>🔎</span><input id="searchInput" placeholder="Rechercher un prospect, un contact, un secteur…"></div>
       <div class="topbar-actions">
         <button class="iconbtn" id="themeBtn" title="Thème">🌙</button>
-        <button class="btn primary" id="addBtn"><span class="add-icon">+</span><span class="add-label"> Nouveau prospect</span></button>
+        <button class="btn primary" id="addBtn"><span class="add-icon">+</span><span class="add-label"> Recruter un crewmate</span></button>
       </div>
     </div>
     <div id="view"></div>
@@ -1040,9 +1073,9 @@ function baseFiltered(){
    Rendering
    ================================================================== */
 const VIEW_TITLES = {
-  dashboard:'Tableau de bord', focus:'Mission du jour', urgence:'Radar des relances', list:'Équipage prospects',
-  updates:'Mises à jour', nrp:'Dernières mises à jour NRP', noncontacte:'Non contactés',
-  friction:'Détection des blocages', potentiel:'Réservoir FMFP', settings:'Paramètres'
+  dashboard:'Cockpit', focus:'Mission du jour', urgence:'Réunion d’urgence', list:'Équipage prospects',
+  updates:'Tâches accomplies', nrp:'Crewmates muets (NRP)', noncontacte:'Portés disparus',
+  friction:'Chasse aux imposteurs', potentiel:'Réservoir FMFP', settings:'Salle des moteurs'
 };
 
 function render(){
@@ -1052,7 +1085,7 @@ function render(){
   if(state.view === 'dashboard') view.innerHTML = dashboardHTML();
   else if(state.view === 'focus') view.innerHTML = focusHTML();
   else if(state.view === 'urgence') view.innerHTML = urgenceHTML();
-  else if(state.view === 'list') view.innerHTML = listHTML(baseFiltered(), 'Tous les prospects', 'Classés par Potentiel Financier × Chances de Closing');
+  else if(state.view === 'list') view.innerHTML = listHTML(baseFiltered(), 'Tout l’équipage', 'Classés par Potentiel Financier × Chances de Closing');
   else if(state.view === 'updates') view.innerHTML = updatesHTML();
   else if(state.view === 'nrp') view.innerHTML = nrpHTML();
   else if(state.view === 'noncontacte') view.innerHTML = noncontacteHTML();
@@ -1253,7 +1286,7 @@ function urgenceHTML(){
       <div class="card"><div class="kpi-label">Dont en retard</div><div class="kpi-value num" style="color:var(--danger)">${late}</div></div>
       <div class="card"><div class="kpi-label">Relances planifiées (total base)</div><div class="kpi-value num">${state.prospects.filter(p=>p.date_relance).length}</div></div>
     </div>
-    <div class="section-title"><h2>Matrice d'urgence</h2><span class="hint">Calcul automatique · classé par valeur pondérée (Potentiel × %)</span></div>
+    <div class="section-title"><h2>Réunion d'urgence — qui est suspect ?</h2><span class="hint">Calcul automatique · classé par valeur pondérée (Potentiel × %)</span></div>
     ${tableShell(due, "Aucune relance due aujourd'hui — la matrice d'urgence est à jour ✅")}
   `;
 }
@@ -1345,25 +1378,73 @@ function dashboardHTML(){
   const mails = state.prospects.filter(p => inRange(p.dernier_mail, range)).length;
   const rdvs = state.prospects.filter(p => (p.rdv && p.rdv.toLowerCase()!=='pas encore') && inRange(p.dernier_contact, range)).length;
 
+  const stageDefs = [
+    {k:'Prospection', i:'🧑‍🚀', c:'blue'},{k:'Relance', i:'📡', c:'gold'},
+    {k:'RDV obtenu', i:'🤝', c:'purple'},{k:'Qualifiés', i:'🏆', c:'green'}];
+  const stageCounts = [1,2,3,4].map(r => state.prospects.filter(x=>stageRank(x)>=r).length);
+  const pipeHTML = stageDefs.map((d,idx)=>{
+    const pct = idx===0 ? 100 : (stageCounts[idx-1] ? Math.round(100*stageCounts[idx]/stageCounts[idx-1]) : 0);
+    return `<div class="stage ${d.c}"><div class="stage-name">${d.k}</div><div class="stage-num num">${stageCounts[idx].toLocaleString('fr-FR')}</div><div class="stage-ic">${d.i}</div><div class="stage-pct">${pct}%</div></div>${idx<3?'<div class="stage-arrow">➜</div>':''}`;
+  }).join('');
+  const recent = [...state.prospects].filter(x=>x.mise_a_jour).sort((a,b)=>new Date(b.mise_a_jour)-new Date(a.mise_a_jour)).slice(0,4);
+  const dotCols = ['var(--froid)','var(--chaud)','#a45be8','#2fa86b'];
+  const agoTxt = iso => { const m = Math.max(1, Math.round((Date.now()-new Date(iso))/60000)); return m<60? `il y a ${m} min` : m<1440? `il y a ${Math.round(m/60)} h` : `il y a ${Math.round(m/1440)} j`; };
+  const actHTML = recent.length ? recent.map((x,i)=>`<div class="act-row"><div class="act-av">${['🔵','🟡','🟣','🟢'][i%4]}</div><div class="act-txt"><div>${escapeHtml(x.nom)} — fiche mise à jour</div><div class="sub">${agoTxt(x.mise_a_jour)}</div></div><span class="act-dot" style="background:${dotCols[i%4]}"></span></div>`).join('') : '<div class="sub">Aucune activité récente.</div>';
+  const todayStr = todayISO();
+  const dueCount = state.prospects.filter(x=>x.date_relance && x.date_relance <= todayStr).length;
+  const nrpCount = state.prospects.filter(x=>(x.nbr_relance_nrp||0)>0).length;
+  const topClients = [...state.prospects].sort((a,b)=>getWeightedScore(b)-getWeightedScore(a)).slice(0,3);
+  const topMax = topClients.length ? (getWeightedScore(topClients[0])||1) : 1;
+  const topHTML = topClients.map((x,i)=>`<div class="top-row"><span class="top-rank">${i+1}</span><span class="top-name">${escapeHtml(x.nom)}</span><span class="top-bar"><i style="width:${Math.max(6,Math.round(100*getWeightedScore(x)/topMax))}%"></i></span><span class="top-val num">${getWeightedScore(x).toLocaleString('fr-FR')}</span></div>`).join('') || '<div class="sub">Pas encore de données.</div>';
+
   return `
   <section class="mission-hero">
     <div class="mission-hero-copy">
       <div class="mission-kicker"><span class="status-pulse"></span> LICORNE SPACE HQ · CENTRE DE COMMANDEMENT</div>
-      <h2>Bonjour, commandant !</h2>
-      <p>Votre équipage commercial est prêt. Identifiez les opportunités, lancez les relances et faites progresser le pipeline.</p>
-      <div class="mission-tags"><span>🚀 Mission active</span><span>🛰️ Données synchronisées</span></div>
+      <h2>Bonjour Angela ! 👋</h2>
+      <p>Mission du jour : booster ton chiffre d’affaires. Ton équipage est prêt, capitaine Angela.</p>
+      <div class="mission-tags"><span>🚀 Mission du jour : Booster le CA</span><span>🛰️ Données synchronisées</span><span>👑 Capitaine Angela</span></div>
     </div>
     <div class="mission-hero-stamp">MISSION<br><b>CONTROL</b><small>CRM LICORNE</small></div>
   </section>
   <div class="grid cols-4">
-    <div class="card"><div class="kpi-label">Membres d’équipage</div><div class="kpi-value num">${total}</div><div class="kpi-sub">Équipage enregistré</div></div>
-    <div class="card"><div class="kpi-label">Réserve de valeur du pipeline</div><div class="kpi-value num" style="color:var(--brand);">${totalWeighted.toLocaleString('fr-FR')}</div><div class="kpi-sub">∑ (Potentiel × Closing %)</div></div>
-    <div class="card"><div class="kpi-label">Taux de joignabilité</div><div class="kpi-value num">${joignabilite}%</div><div class="kpi-sub">Contacts aboutis / tentatives</div></div>
-    <div class="card"><div class="kpi-label">Taux de conversion</div><div class="kpi-value num">${conversion}%</div><div class="kpi-sub">Fiches qualifiées / total</div></div>
+    <div class="card"><div class="kpi-label">Crewmates à bord</div><div class="kpi-value num">${total}</div><div class="kpi-sub">Équipage enregistré</div></div>
+    <div class="card"><div class="kpi-label">Trésor du vaisseau</div><div class="kpi-value num" style="color:var(--brand);">${totalWeighted.toLocaleString('fr-FR')}</div><div class="kpi-sub">∑ (Potentiel × Closing %)</div></div>
+    <div class="card"><div class="kpi-label">Signal radio</div><div class="kpi-value num">${joignabilite}%</div><div class="kpi-sub">Contacts aboutis / tentatives</div></div>
+    <div class="card"><div class="kpi-label">Taux de conversion</div><div class="kpi-value num">${conversion}%</div><div class="kpi-sub">Crewmates qualifiés / total</div></div>
+  </div>
+
+  <div class="grid dash-trio" style="margin-top:16px;">
+    <div class="card">
+      <div class="chart-title">🎯 Trajectoire de la mission (Pipeline)</div>
+      <div class="pipe-row">${pipeHTML}</div>
+    </div>
+    <div class="card">
+      <div class="chart-title">📣 Messages de l'équipage</div>
+      ${actHTML}
+    </div>
+    <div class="card">
+      <div class="chart-title">⚠️ Alertes Mission</div>
+      <div class="alert-row"><span class="al-ic red">!</span><div><b>${dueCount}</b> crewmate${dueCount>1?'s':''} à relancer</div></div>
+      <div class="alert-row"><span class="al-ic yellow">!</span><div><b>${nrpCount}</b> sans réponse (NRP) — suspects</div></div>
+      <div class="alert-row"><span class="al-ic blue">i</span><div>Conversion actuelle : <b>${conversion}%</b></div></div>
+      <button class="btn alert-btn" type="button" onclick="state.view='urgence';render();">Voir toutes les alertes ➜</button>
+    </div>
+  </div>
+  <div class="grid cols-2" style="margin-top:16px;">
+    <div class="card">
+      <div class="chart-title">⭐ Top Crewmates (valeur pondérée)</div>
+      ${topHTML}
+    </div>
+    <div class="card promo-card">
+      <div class="promo-title">CRM Licorne</div>
+      <div class="promo-txt">Transforme tes prospects en clients, comme une équipe d'astronautes !</div>
+      <button class="btn primary" type="button" onclick="state.view='focus';render();">Découvrir la mission ➜</button>
+    </div>
   </div>
 
   <div class="section-title">
-    <h2>Journal des missions commerciales</h2>
+    <h2>Journal de bord des missions</h2>
     <div class="period-toggle" id="dashPeriodToggle">
       <button data-period="jour" class="${state.dashPeriod==='jour'?'active':''}">Jour</button>
       <button data-period="semaine" class="${state.dashPeriod==='semaine'?'active':''}">Semaine</button>
@@ -1376,7 +1457,7 @@ function dashboardHTML(){
     <div class="card"><div class="kpi-label">RDV fixés / présentés</div><div class="kpi-value num">${rdvs}</div></div>
   </div>
 
-  <div class="section-title"><h2>Radar de performance</h2><span class="hint">Recalculé automatiquement</span></div>
+  <div class="section-title"><h2>Radar de la Skeld</h2><span class="hint">Recalculé automatiquement</span></div>
   <div class="grid cols-2">
     <div class="card"><div class="chart-title">Progression des recrues commerciales</div><canvas id="chartFunnel" height="200"></canvas></div>
     <div class="card"><div class="chart-title">Thermomètre d'intérêt</div><canvas id="chartThermo" height="200"></canvas></div>
